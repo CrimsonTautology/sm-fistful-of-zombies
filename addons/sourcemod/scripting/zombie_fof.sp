@@ -164,11 +164,16 @@ SpawnZombieTeamplay()
     new ent = CreateEntityByName("fof_teamplay");
     if(IsValidEntity(ent))
     {
-        SetEntProp(ent, Prop_Data, "m_nRespawnSystem", 0);
-        SetEntProp(ent, Prop_Data, "m_bRoundBased", 0);
-        SetEntProp(ent, Prop_Data, "m_bSwitchTeams", 1);
+        SetEntProp(ent, Prop_Data, "m_bRoundBased", 1);
+        SetEntProp(ent, Prop_Data, "m_nRespawnSystem", 1);
+        SetEntProp(ent, Prop_Data, "m_bSwitchTeams", 0);
         DispatchSpawn(ent);
         ActivateEntity(ent);
+
+        //OnRoundTimeEnd //Winner is Humans(vig)
+        //OnNoDespAlive  //Respawn Zombies(desp)
+        //OnNoVigAlive   //Winner is Zombies(desp)
+        //OnNewBuyRound  //Block or remove cash
     }
 
     return ent;
