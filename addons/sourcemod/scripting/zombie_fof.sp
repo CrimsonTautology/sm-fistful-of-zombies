@@ -24,8 +24,11 @@
 #define GAME_DESCRIPTION    "Zombie Survival"
 #define SOUND_ROUNDSTART    "music/standoff1.mp3"
 
-new Handle:sm_fof_zombie_version = INVALID_HANDLE;
 new Handle:g_Cvar_Enabled = INVALID_HANDLE;
+
+new Handle:g_Cvar_TeambalanceAllowed = INVALID_HANDLE;
+new Handle:g_Cvar_TeamsUnbalanceLimit = INVALID_HANDLE;
+new Handle:g_Cvar_Autoteambalance = INVALID_HANDLE;
 
 new g_Teamplay = INVALID_ENT_REFERENCE;
 
@@ -50,6 +53,12 @@ public OnPluginStart()
     HookEvent("round_start", Event_RoundStart);
 
     RegAdminCmd("sm_zombie", Command_Zombie, ADMFLAG_ROOT, "TEST command");//TODO
+
+    g_Cvar_TeambalanceAllowed = FindConVar("fof_sv_teambalance_allowed");
+    g_Cvar_TeamsUnbalanceLimit = FindConVar("mp_teams_unbalance_limit");
+    g_Cvar_Autoteambalance = FindConVar("mp_autoteambalance");
+
+    SetDefaultConVars();
 
     AutoExecConfig();
 }
@@ -84,7 +93,8 @@ public Event_PlayerDeath(Handle:event, const String:name[], bool:dontBroadcast)
 
 public Event_RoundStart(Event:event, const String:name[], bool:dontBroadcast)
 {
-    //RemoveCrates();
+    ConvertSpawns();
+    RemoveCrates();
 }
 
 public Action:Command_Zombie(client, args)
@@ -98,6 +108,13 @@ public Action:Command_Zombie(client, args)
     ServerCommand("round_restart");
 
     return Plugin_Handled;
+}
+
+SetDefaultConVars()
+{
+    SetConVarBool(g_Cvar_TeambalanceAllowed, false, false, false);
+    SetConVarInt(g_Cvar_TeamsUnbalanceLimit, 30, false, false);
+    SetConVarBool(g_Cvar_Autoteambalance, false, false, false);
 }
 
 
@@ -123,12 +140,13 @@ ConvertSpawns()
     {
         //Get original's position and remove it
         GetEntPropVector(original, Prop_Send, "m_vecOrigin", position);
-		AcceptEntityInput(original, "Kill" );
+        AcceptEntityInput(original, "Kill" );
 
         //Spawn a replacement at the same position
         converted = count % 2 == 0
             ? CreateEntityByName("info_player_vigilante")
-            : CreateEntityByName("info_player_desperado");
+            : CreateEntityByName("info_player_desperado")
+            ;
         if(IsValidEntity(converted))
         {
             SetEntPropVector(converted, Prop_Send, "m_vecOrigin", position);
