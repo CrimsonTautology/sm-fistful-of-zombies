@@ -51,6 +51,13 @@ new g_LootTotalWeight;
 
 new g_Teamplay = INVALID_ENT_REFERENCE;
 
+new g_Model_Vigilante;
+new g_Model_Desperado;
+new g_Model_Bandido;
+new g_Model_Ranger;
+new g_Model_Ghost;
+new g_Model_Skeleton;
+
 
 public Plugin:myinfo =
 {
@@ -130,6 +137,13 @@ public OnMapStart()
     //Cache materials
     PrecacheSound(SOUND_ROUNDSTART, true);
 
+    g_Model_Vigilante = PrecacheModel("models/playermodels/player1.mdl");
+    g_Model_Desperado = PrecacheModel("models/playermodels/player2.mdl");
+    g_Model_Bandido = PrecacheModel("models/playermodels/bandito.mdl");
+    g_Model_Ranger = PrecacheModel("models/playermodels/frank.mdl");
+    g_Model_Ghost = PrecacheModel("models/npc/ghost.mdl");
+    g_Model_Skeleton = PrecacheModel("models/skeleton.mdl");
+
     ConvertSpawns();
     ConvertWhiskey(g_LootTable, g_LootTotalWeight);
     g_Teamplay = SpawnZombieTeamplay();
@@ -195,6 +209,14 @@ public Action:Timer_PlayerSpawnDelay(Handle:timer, any:userid)
 
         GetRandomValueFromTable(g_GearPrimaryTable, g_GearPrimaryTotalWeight, weapon, sizeof(weapon));
         ForceEquipWeapon(client, weapon);
+
+        //Force client model
+        //SetClientModelIndex(client, g_Model_Vigilante);
+        RandomizeModel(client);
+    } else if(IsZombie(client))
+    {
+        //Force client model
+        SetClientModelIndex(client, g_Model_Skeleton);
     }
 
     return Plugin_Handled;
@@ -510,6 +532,37 @@ stock ForceEquipWeapon(client, const String:weapon[], bool second=false)
 
     Format(tmp, sizeof(tmp), "use %s%s", weapon, second ? "2" : "");
     ClientCommand(client, tmp);
+}
+
+stock RandomizeModel(client)
+{
+    new model;
+
+    if(IsZombie(client))
+    {
+        model = GetRandomInt(0, 3);
+        switch (model)
+        {
+            case 0: { SetClientModelIndex(client, g_Model_Vigilante); }
+            case 1: { SetClientModelIndex(client, g_Model_Desperado); }
+            case 2: { SetClientModelIndex(client, g_Model_Bandido); }
+            case 3: { SetClientModelIndex(client, g_Model_Ranger); }
+        }
+
+    } else if(IsZombie(client))
+    {
+        model = GetRandomInt(0, 1);
+        switch (model)
+        {
+            case 0: { SetClientModelIndex(client, g_Model_Ghost); }
+            case 1: { SetClientModelIndex(client, g_Model_Skeleton); }
+        }
+    }
+}
+
+stock bool SetClientModelIndex(client, index)
+{
+    SetEntProp(client, Prop_Data, "m_nModelIndex", index, 2);
 }
 
 stock bool:SetGameDescription(String:description[], bool:override = true)
