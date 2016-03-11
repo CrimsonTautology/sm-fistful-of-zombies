@@ -36,14 +36,36 @@ fistful_of_zombies
 	}
 
     //A random list of gear a player can start with
-    gear
+    gear_primary
     {
-		gear1
-        {
-        }
+        weapon_deringer { weight 25 }
+        weapon_sawedoff_shotgun { weight 25 }
+        weapon_coltnavy { weight 25 }
+        weapon_volcanic { weight 25 }
+        weapon_bow { weight 25 }
 
-		gear2
-        {
-        }
+        weapon_schofield { weight 8 }
+        weapon_carbine { weight 8 }
+        weapon_maresleg { weight 8 }
+
+        weapon_henryrifle { weight 1 }
+        weapon_peacemaker { weight 1 }
+        weapon_coachgun { weight 1 }
+    }
+
+    gear_secondary
+    {
+        weapon_knife { weight 20 }
+        weapon_dynamite { weight 20 } 
+
+        weapon_deringer { weight 8 }
+        weapon_sawedoff_shotgun { weight 8 }
+        weapon_axe { weight 8 }
+
+        weapon_volcanic { weight 4 }
+        weapon_dynamite_black { weight 4 }
+        weapon_whiskey { weight 4 }
+
+        weapon_machete { weight 1 }
     }
 }

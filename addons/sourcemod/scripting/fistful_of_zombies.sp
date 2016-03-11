@@ -40,9 +40,9 @@ new Handle:g_Cvar_TeambalanceAllowed = INVALID_HANDLE;
 new Handle:g_Cvar_TeamsUnbalanceLimit = INVALID_HANDLE;
 new Handle:g_Cvar_Autoteambalance = INVALID_HANDLE;
 
-new Handle:g_GearTable = INVALID_HANDLE;
+new Handle:g_GearPrimaryTable = INVALID_HANDLE;
+new Handle:g_GearSecondaryTable = INVALID_HANDLE;
 new Handle:g_LootTable = INVALID_HANDLE;
-new g_LootCount;
 new g_LootTotalWeight;
 
 new g_Teamplay = INVALID_ENT_REFERENCE;
@@ -112,13 +112,13 @@ public OnMapStart()
     //Load configuration
     decl String:file[PLATFORM_MAX_PATH];
     GetConVarString(g_Cvar_Config, file, sizeof(file));
-    LoadFOZFile(file, g_GearTable, g_LootTable, g_LootCount, g_LootTotalWeight);
+    LoadFOZFile(file, g_GearTable, g_LootTable, g_LootTotalWeight);
 
     //Cache materials
     PrecacheSound(SOUND_ROUNDSTART, true);
 
     ConvertSpawns();
-    ConvertWhiskey(g_LootTable, g_LootCount, g_LootTotalWeight);
+    ConvertWhiskey(g_LootTable, g_LootTotalWeight);
     g_Teamplay = SpawnZombieTeamplay();
 }
 
@@ -149,7 +149,7 @@ public Event_PlayerDeath(Handle:event, const String:name[], bool:dontBroadcast)
 
 public Event_RoundStart(Event:event, const String:name[], bool:dontBroadcast)
 {
-    ConvertWhiskey(g_LootTable, g_LootCount, g_LootTotalWeight);
+    ConvertWhiskey(g_LootTable, g_LootTotalWeight);
     RemoveCrates();
 }
 
@@ -214,7 +214,7 @@ public Action:Command_Zombie(client, args)
     return Plugin_Handled;
 }
 
-LoadFOZFile(String:file[], &Handle:gear_table, &Handle:loot_table, &loot_count, &loot_total_weight)
+LoadFOZFile(String:file[], &Handle:gear_table, &Handle:loot_table, &loot_total_weight)
 {
     decl String:path[PLATFORM_MAX_PATH], String:key[MAX_KEY_LENGTH];
     new weight;
@@ -222,7 +222,6 @@ LoadFOZFile(String:file[], &Handle:gear_table, &Handle:loot_table, &loot_count, 
 
     //if(gear_table != INVALID_HANDLE) CloseHandle(gear_table);
     if(loot_table != INVALID_HANDLE) CloseHandle(loot_table);
-    loot_count = 0;
     loot_total_weight = 0;
 
     //gear_table = CreateKeyValues("gear");
@@ -251,10 +250,9 @@ LoadFOZFile(String:file[], &Handle:gear_table, &Handle:loot_table, &loot_count, 
             //Ignore values that do not have a weight or 0 weight
             if(weight > 0)
             {
-                loot_count++;
                 loot_total_weight += weight;
                 
-                PrintToServer( "Add[%d]: %s (%d) (%d)",loot_count, key, weight, loot_total_weight);
+                PrintToServer( "Add: %s (%d) (%d)", key, weight, loot_total_weight);
             }
         }
         while(KvGotoNextKey(config));
@@ -322,7 +320,7 @@ ConvertSpawns()
 
 }
 
-ConvertWhiskey(Handle:loot_table, loot_count, loot_total_weight)
+ConvertWhiskey(Handle:loot_table, loot_total_weight)
 {
     decl String:loot[MAX_KEY_LENGTH];
     new count = 0;
@@ -338,7 +336,7 @@ ConvertWhiskey(Handle:loot_table, loot_count, loot_total_weight)
         AcceptEntityInput(original, "Kill" );
 
         //Spawn a replacement at the same position
-        GetRandomLootFromTable(loot_table, loot_count, loot_total_weight, loot, sizeof(loot));
+        GetRandomLootFromTable(loot_table, loot_total_weight, loot, sizeof(loot));
         if(StrEqual(loot, "nothing", false)) continue;
 
         converted = CreateEntityByName(loot);//TODO
@@ -411,7 +409,7 @@ stock BecomeZombie(client)
     ChangeClientTeam(client, ZOMBIE_TEAM);
 }
 
-stock bool:GetRandomLootFromTable(Handle:loot_table, loot_count, loot_total_weight, String:loot[], length)
+stock bool:GetRandomLootFromTable(Handle:loot_table, loot_total_weight, String:loot[], length)
 {
     new weight;
     new rand = GetRandomInt(0, loot_total_weight - 1);
