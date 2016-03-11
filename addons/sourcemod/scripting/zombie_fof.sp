@@ -24,8 +24,8 @@
 #define GAME_DESCRIPTION    "Zombie Survival"
 #define SOUND_ROUNDSTART    "music/standoff1.mp3"
 
-#define ZOMBIE_TEAM         2
-#define HUMAN_TEAM          1
+#define ZOMBIE_TEAM         3   //Desperados
+#define HUMAN_TEAM          2   //Vigilantes
 
 new Handle:g_Cvar_Enabled = INVALID_HANDLE;
 
@@ -76,7 +76,6 @@ public OnMapStart()
     PrecacheSound(SOUND_ROUNDSTART, true);
 
     ConvertSpawns();
-    ConvertWhiskey();
     g_Teamplay = SpawnZombieTeamplay();
 }
 
@@ -106,6 +105,7 @@ public Event_PlayerDeath(Handle:event, const String:name[], bool:dontBroadcast)
 
 public Event_RoundStart(Event:event, const String:name[], bool:dontBroadcast)
 {
+    ConvertWhiskey();
     RemoveCrates();
 }
 
