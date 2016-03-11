@@ -21,7 +21,7 @@
 #define PLUGIN_NAME         "[FoF] Fistful Of Zombies"
 #define DEBUG				false
 
-#define WEAPON_NAME_SIZE    32
+#define MAX_KEY_LENGTH	    128
 
 #define GAME_DESCRIPTION    "Fistful Of Zombies"
 #define SOUND_ROUNDSTART    "music/standoff1.mp3"
@@ -38,6 +38,9 @@ new Handle:g_Cvar_RoundTime = INVALID_HANDLE;
 new Handle:g_Cvar_TeambalanceAllowed = INVALID_HANDLE;
 new Handle:g_Cvar_TeamsUnbalanceLimit = INVALID_HANDLE;
 new Handle:g_Cvar_Autoteambalance = INVALID_HANDLE;
+
+new Handle:g_StartingGear = INVALID_HANDLE;
+new Handle:g_RandomLoot = INVALID_HANDLE;
 
 new g_Teamplay = INVALID_ENT_REFERENCE;
 
@@ -103,6 +106,12 @@ public OnClientDisconnect(client)
 
 public OnMapStart()
 {
+    //Load configuration
+    decl String:file[PLATFORM_MAX_PATH];
+    GetConVarString(g_Cvar_Config, file, sizeof(file));
+    LoadFOZFile(file, g_StartingGear, g_RandomLoot);
+
+    //Cache materials
     PrecacheSound(SOUND_ROUNDSTART, true);
 
     ConvertSpawns();
@@ -156,7 +165,7 @@ public Action:Hook_OnWeaponCanUse(client, weapon)
 {
     //Block zombies from picking up guns
     if (IsZombie(client)) {
-        decl String:class[WEAPON_NAME_SIZE];
+        decl String:class[MAX_KEY_LENGTH];
         GetEntityClassname(weapon, class, sizeof(class));
 
         if (!StrEqual(class, "weapon_fists")) { //TODO have whitelist mechanic
@@ -199,6 +208,40 @@ public Action:Command_Zombie(client, args)
     AcceptEntityInput(g_Teamplay, "InputVigVictory");
 
     return Plugin_Handled;
+}
+
+LoadFOZFile(String:file[], &Handle:gear, &Handle:loot)
+{
+    decl String:path[PLATFORM_MAX_PATH], String:val[MAX_KEY_LENGTH];
+    BuildPath(Path_SM, path, sizeof(path), "configs/%s", file);
+
+    //if(gear != INVALID_HANDLE) CloseHandle(gear);
+    if(loot != INVALID_HANDLE) CloseHandle(loot);
+
+    //gear = CreateKeyValues("gear");
+    //loot = CreateKeyValues("loot");
+    new Handle:config = CreateKeyValues("foz");
+
+    if(!FileToKeyValues(config, path))
+    {
+        LogError("Could not read map rotation file \"%s\"", file);
+        SetFailState("Could not read map rotation file \"%s\"", file);
+        return;
+    }
+
+    //Read the default "loot" key if node_key cvar is not set or invalid
+    if(!KvJumpToKey(config, "loot"))
+    {
+        //Build the loot table
+    }else{
+        LogError("A valid \"loot\" key was not defined in \"%s\"", file);
+        SetFailState("A valid \"loot\" key was not defined in \"%s\"", file);
+    }
+
+    KvRewind(config);
+
+
+
 }
 
 SetDefaultConVars()

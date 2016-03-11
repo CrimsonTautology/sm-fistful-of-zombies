@@ -1,0 +1,21 @@
+fistful_of_zombies
+{
+    //Loot that will randomly spawn in the map
+	loot
+	{
+		nothing	{ weight 0.5}
+		weapon_walker	{ weight 0.1}
+	}
+
+    //A random list of gear a player can start with
+    gear
+    {
+		gear1
+        {
+        }
+
+		gear2
+        {
+        }
+    }
+}
