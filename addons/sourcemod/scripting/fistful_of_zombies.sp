@@ -158,7 +158,8 @@ public OnMapStart()
 public OnConfigsExecuted()
 {
     if(!IsEnabled()) return;
-	//SetGameDescription(GAME_DESCRIPTION);
+
+	SetGameDescription(GAME_DESCRIPTION);
 }
 
 public Event_PlayerActivate(Handle:event, const String:name[], bool:dontBroadcast)
