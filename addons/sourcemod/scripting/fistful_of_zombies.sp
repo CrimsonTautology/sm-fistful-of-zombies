@@ -141,10 +141,16 @@ public Event_PlayerActivate(Handle:event, const String:name[], bool:dontBroadcas
 
 public Event_PlayerSpawn(Handle:event, const String:name[], bool:dontBroadcast)
 {
+    if(!IsEnabled()) return;
+
+    new userid = GetEventInt(event, "userid");
+    CreateTimer(0.0, Timer_PlayerSpawnDelay, userid, TIMER_FLAG_NO_MAPCHANGE);
 }
 
 public Event_PlayerDeath(Handle:event, const String:name[], bool:dontBroadcast)
 {
+    if(!IsEnabled()) return;
+
     new userid = GetEventInt(event, "userid");
     new client = GetClientOfUserId(userid);
 
@@ -159,6 +165,30 @@ public Event_RoundStart(Event:event, const String:name[], bool:dontBroadcast)
 {
     ConvertWhiskey(g_LootTable, g_LootTotalWeight);
     RemoveCrates();
+}
+
+public Action:Timer_PlayerSpawnDelay(Handle:timer, any:userid)
+{
+    new client = GetClientOfUserId(userid);
+
+    if(client <= 0) return Plugin_Handled;
+    if(!IsClientInGame(client)) return Plugin_Handled;
+    if(!IsPlayerAlive(client)) return Plugin_Handled;
+    if(!IsEnabled()) return Plugin_Handled;
+
+    //If a player spawns as human give them their primary and secondary gear
+    if(IsHuman(client))
+    {
+        new String:weapon[WEAPON_NAME_SIZE];
+
+        GetRandomValueFromTable(g_GearSecondaryTable, g_GearSecondaryTotalWeight, weapon, sizeof(weapon));
+        ForceEquipWeapon(client, weapon, true);
+
+        GetRandomValueFromTable(g_GearPrimaryTable, g_GearPrimaryTotalWeight, weapon, sizeof(weapon));
+        ForceEquipWeapon(client, weapon);
+    }
+
+    return Plugin_Handled;
 }
 
 public Action:Timer_HumanDeathDelay(Handle:timer, any:userid)
@@ -223,9 +253,9 @@ public Action:Command_Zombie(client, args)
 }
 
 LoadFOZFile(String:file[],
-    &Handle:gear_primary_table, &gear_primary_total_weight,
-    &Handle:gear_secondary_table, &gear_secondary_total_weight,
-    &Handle:loot_table, &loot_total_weight)
+        &Handle:gear_primary_table, &gear_primary_total_weight,
+        &Handle:gear_secondary_table, &gear_secondary_total_weight,
+        &Handle:loot_table, &loot_total_weight)
 {
     decl String:path[PLATFORM_MAX_PATH];
     BuildPath(Path_SM, path, sizeof(path), "configs/%s", file);
@@ -279,7 +309,7 @@ BuildWeightTable(Handle:kv, const String:name[], &Handle:table, &total_weight)
             if(weight > 0)
             {
                 total_weight += weight;
-                
+
                 PrintToServer( "Add[%s]: %s (%d) (%d)", name, key, weight, total_weight);
             }
         }
@@ -454,6 +484,16 @@ stock bool:GetRandomValueFromTable(Handle:table, total_weight, String:value[], l
     KvRewind(table);
 
     return false;
+}
+
+stock ForceEquipWeapon(client, const String:weapon[], bool second=false)
+{
+    new String:tmp[WEAPON_NAME_SIZE];
+
+    GivePlayerItem(client, weapon);
+
+    Format(tmp, sizeof(tmp), "use %s%s", weapon, second ? "2" : "");
+    ClientCommand(client, tmp);
 }
 
 stock bool:SetGameDescription(String:description[], bool:override = true)
