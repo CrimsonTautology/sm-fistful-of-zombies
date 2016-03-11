@@ -1,7 +1,7 @@
 /**
  * vim: set ts=4 :
  * =============================================================================
- * zombie_fof
+ * Fistful Of Zombies
  * Zombie survival for Fistful of Frags
  *
  * Copyright 2016 CrimsonTautology
@@ -18,18 +18,22 @@
 #tryinclude <steamworks>
 
 #define PLUGIN_VERSION		"1.0.0"
-#define PLUGIN_NAME         "[FoF] Zombie Survival"
+#define PLUGIN_NAME         "[FoF] Fistful Of Zombies"
 #define DEBUG				false
 
 #define WEAPON_NAME_SIZE    32
 
-#define GAME_DESCRIPTION    "Zombie Survival"
+#define GAME_DESCRIPTION    "Fistful Of Zombies"
 #define SOUND_ROUNDSTART    "music/standoff1.mp3"
+#define SOUND_HEART         "physics/body/body_medium_impact_soft5.wav"
+#define SOUND_NOPE          "player/voice/no_no1.wav"
 
 #define ZOMBIE_TEAM         3   //Desperados
 #define HUMAN_TEAM          2   //Vigilantes
 
 new Handle:g_Cvar_Enabled = INVALID_HANDLE;
+new Handle:g_Cvar_Config = INVALID_HANDLE;
+new Handle:g_Cvar_RoundTime = INVALID_HANDLE;
 
 new Handle:g_Cvar_TeambalanceAllowed = INVALID_HANDLE;
 new Handle:g_Cvar_TeamsUnbalanceLimit = INVALID_HANDLE;
@@ -44,14 +48,29 @@ public Plugin:myinfo =
 	author = "CrimsonTautology",
 	description = "Zombie Survival for Fistful of Frags",
 	version = PLUGIN_VERSION,
-	url = "https://github.com/CrimsonTautology/sm_zombie_fof"
+	url = "https://github.com/CrimsonTautology/sm_fistful_of_zombies"
 };
 
 public OnPluginStart()
 {
-    CreateConVar("fof_zombie_version", PLUGIN_VERSION, PLUGIN_NAME, FCVAR_PLUGIN | FCVAR_SPONLY | FCVAR_REPLICATED | FCVAR_NOTIFY | FCVAR_DONTRECORD);
+    CreateConVar("foz_version", PLUGIN_VERSION, PLUGIN_NAME, FCVAR_PLUGIN | FCVAR_SPONLY | FCVAR_REPLICATED | FCVAR_NOTIFY | FCVAR_DONTRECORD);
 
-    g_Cvar_Enabled = CreateConVar("fof_zombie", "1", "Whether or not zombie mode is enabled");
+    g_Cvar_Enabled = CreateConVar(
+            "foz_enabled",
+            "1",
+            "Whether or not Fistful of Zombies is enabled");
+
+    g_Cvar_Config = CreateConVar(
+            "foz_config",
+            "fistful_of_zombies.txt",
+            "Location of the Fistful of Zombies configuration file",
+            FCVAR_PLUGIN);
+
+    g_Cvar_RoundTime = CreateConVar(
+            "foz_round_time",
+            "360",
+            "How long surviors have to survive in seconds to win a round in Fistful of Zombies",
+            FCVAR_PLUGIN);
 
     HookEvent("player_activate", Event_PlayerActivate);
     HookEvent("player_spawn", Event_PlayerSpawn);
