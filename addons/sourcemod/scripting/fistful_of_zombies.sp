@@ -456,11 +456,13 @@ SpawnZombieTeamplay()
         DispatchKeyValue(ent, "RespawnSystem", "1");
         DispatchKeyValue(ent, "SwitchTeams", "1");
 
-        DispatchKeyValue(ent, "OnNewRound",      "!self,RoundTime,30,0,-1");
-        DispatchKeyValue(ent, "OnNewRound",      "!self,ExtraTime,330,0.1,-1");
-        DispatchKeyValue(ent, "OnRoundTimeEnd",  "!self,InputVigVictory,,0,-1");
-        DispatchKeyValue(ent, "OnTimerEnd",      "!self,ExtraTime,30,0.1,-1");
+        //Todo, cvar ExtraTime and RoundTime
+        DispatchKeyValue(ent, "OnNewRound",      "!self,RoundTime,420,0,-1");
+        DispatchKeyValue(ent, "OnNewRound",      "!self,ExtraTime,10,0.1,-1");
+        DispatchKeyValue(ent, "OnTimerEnd",      "!self,ExtraTime,10,0,-1");
         DispatchKeyValue(ent, "OnTimerEnd",      "!self,InputRespawnPlayers,-2,0,-1");
+
+        DispatchKeyValue(ent, "OnRoundTimeEnd",  "!self,InputVigVictory,,0,-1");
         DispatchKeyValue(ent, "OnNoDespAlive",   "!self,InputRespawnPlayers,-2,0,-1");
         DispatchKeyValue(ent, "OnNoVigAlive",    "!self,InputDespVictory,,0,-1");
 
