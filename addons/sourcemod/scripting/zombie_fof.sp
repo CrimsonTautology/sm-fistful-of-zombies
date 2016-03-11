@@ -21,6 +21,8 @@
 #define PLUGIN_NAME         "[FoF] Zombie Survival"
 #define DEBUG				false
 
+#define WEAPON_NAME_SIZE    32
+
 #define GAME_DESCRIPTION    "Zombie Survival"
 #define SOUND_ROUNDSTART    "music/standoff1.mp3"
 
@@ -72,7 +74,11 @@ public OnPluginStart()
     AutoExecConfig();
 }
 
-public OnClientDisconnect_Post(client)
+public OnClientPostAdminCheck(client)
+{
+    SDKHook(client, SDKHook_WeaponCanUse, Hook_OnWeaponCanUse);
+}
+public OnClientDisconnect(client)
 {
 }
 
@@ -114,12 +120,32 @@ public Event_RoundStart(Event:event, const String:name[], bool:dontBroadcast)
     RemoveCrates();
 }
 
+public Action:Hook_OnWeaponCanUse(client, weapon)
+{
+    //Block zombies from picking up guns
+    if (IsZombie(client)) {
+        decl String:class[WEAPON_NAME_SIZE];
+        GetEntityClassname(weapon, class, sizeof(class));
+        PrintToServer("Hit OnWeaponUse %s - %L", class, client); //TODO
+
+        if (!StrEqual(class, "weapon_fists")) { //TODO have whitelist mechanic
+            PrintCenterText(client, "Zombies Can Not Use Guns"); 
+            PrintToChat(client, "Zombies Can Not Use Guns"); 
+
+            return Plugin_Handled;
+        }
+    }
+
+    return Plugin_Continue;
+}
+
 
 public Action:Command_JoinTeam(client, const String:command[], args) 
 { 
     if (!IsClientInGame(client)) return Plugin_Continue; 
     if (client == 0) return Plugin_Continue; 
 
+    //Block non-spectators from changing teams
     if (GetClientTeam(client) > 1) 
     { 
         PrintCenterText(client, "Can Not Change Teams Midgame"); 
@@ -156,7 +182,7 @@ RemoveCrates()
     new ent = INVALID_ENT_REFERENCE;
     while((ent = FindEntityByClassname(ent, "fof_crate*")) != INVALID_ENT_REFERENCE)
     {
-		AcceptEntityInput(ent, "Kill" );
+        AcceptEntityInput(ent, "Kill" );
     }
 }
 
