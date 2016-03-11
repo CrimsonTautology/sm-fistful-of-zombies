@@ -97,9 +97,9 @@ public Event_PlayerDeath(Handle:event, const String:name[], bool:dontBroadcast)
     new client = GetClientOfUserId(GetEventInt(event, "userid"));
 
     //A dead human becomes a zombie
-    if(GetClientTeam(client) == HUMAN_TEAM)
+    if(IsHuman(client))
     {
-        ChangeClientTeam(client, ZOMBIE_TEAM);
+        BecomeZombie(client);
     }
 }
 
@@ -233,6 +233,26 @@ SpawnZombieTeamplay()
 bool:IsEnabled()
 {
     return GetConVarBool(g_Cvar_Enabled);
+}
+
+bool:IsHuman(client)
+{
+    GetClientTeam(client) == HUMAN_TEAM;
+}
+
+bool:IsZombie(client)
+{
+    GetClientTeam(client) == ZOMBIE_TEAM;
+}
+
+BecomeHuman(client)
+{
+    ChangeClientTeam(client, HUMAN_TEAM);
+}
+
+BecomeZombie(client)
+{
+    ChangeClientTeam(client, ZOMBIE_TEAM);
 }
 
 stock bool:SetGameDescription(String:description[], bool:override = true)
