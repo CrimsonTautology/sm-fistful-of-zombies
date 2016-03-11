@@ -365,7 +365,6 @@ SetDefaultConVars()
     SetConVarBool(g_Cvar_Autoteambalance, false, false, false);
 }
 
-
 RemoveCrates()
 {
     new ent = INVALID_ENT_REFERENCE;
@@ -410,6 +409,8 @@ ConvertSpawns()
 
 }
 
+//Whiskey is used as the spawn points for the random loot accross the map.
+//Every whiskey entity is removed and replaced with a random item/weapon.
 ConvertWhiskey(Handle:loot_table, loot_total_weight)
 {
     decl String:loot[MAX_KEY_LENGTH];
@@ -443,6 +444,7 @@ ConvertWhiskey(Handle:loot_table, loot_total_weight)
     }
 }
 
+//Spawn the fof_teamplay entity that will control the game's logic.
 SpawnZombieTeamplay()
 {
     new ent = CreateEntityByName("fof_teamplay");
