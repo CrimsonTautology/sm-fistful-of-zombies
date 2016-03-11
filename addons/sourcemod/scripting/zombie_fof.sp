@@ -24,6 +24,9 @@
 #define GAME_DESCRIPTION    "Zombie Survival"
 #define SOUND_ROUNDSTART    "music/standoff1.mp3"
 
+#define ZOMBIE_TEAM         2
+#define HUMAN_TEAM          1
+
 new Handle:g_Cvar_Enabled = INVALID_HANDLE;
 
 new Handle:g_Cvar_TeambalanceAllowed = INVALID_HANDLE;
@@ -31,6 +34,7 @@ new Handle:g_Cvar_TeamsUnbalanceLimit = INVALID_HANDLE;
 new Handle:g_Cvar_Autoteambalance = INVALID_HANDLE;
 
 new g_Teamplay = INVALID_ENT_REFERENCE;
+
 
 public Plugin:myinfo =
 {
@@ -71,12 +75,14 @@ public OnMapStart()
 {
     PrecacheSound(SOUND_ROUNDSTART, true);
 
+    ConvertSpawns();
+    ConvertWhiskey();
     g_Teamplay = SpawnZombieTeamplay();
 }
 
 public OnConfigsExecuted()
 {
-	SetGameDescription(GAME_DESCRIPTION);
+	//SetGameDescription(GAME_DESCRIPTION);
 }
 
 public Event_PlayerActivate(Handle:event, const String:name[], bool:dontBroadcast)
@@ -89,11 +95,17 @@ public Event_PlayerSpawn(Handle:event, const String:name[], bool:dontBroadcast)
 
 public Event_PlayerDeath(Handle:event, const String:name[], bool:dontBroadcast)
 {
+    new client = GetClientOfUserId(GetEventInt(event, "userid"));
+
+    //A dead human becomes a zombie
+    if(GetClientTeam(client) == HUMAN_TEAM)
+    {
+        ChangeClientTeam(client, ZOMBIE_TEAM);
+    }
 }
 
 public Event_RoundStart(Event:event, const String:name[], bool:dontBroadcast)
 {
-    ConvertSpawns();
     RemoveCrates();
 }
 
@@ -105,7 +117,7 @@ public Action:Command_Zombie(client, args)
         return Plugin_Handled;
     }
 
-    ServerCommand("round_restart");
+    PrintToChat(client, "team = %d", GetClientTeam(client));
 
     return Plugin_Handled;
 }
@@ -134,12 +146,13 @@ ConvertSpawns()
     new count = 0;
     new original  = INVALID_ENT_REFERENCE;
     new converted = INVALID_ENT_REFERENCE;
-    new Float:position[3];
+    new Float:pos[3], Float:ang[3];
 
     while((original = FindEntityByClassname(original, "info_player_fof")) != INVALID_ENT_REFERENCE)
     {
         //Get original's position and remove it
-        GetEntPropVector(original, Prop_Send, "m_vecOrigin", position);
+        GetEntPropVector(original, Prop_Send, "m_vecOrigin", pos);
+        GetEntPropVector(original, Prop_Send, "m_angRotation", ang);
         AcceptEntityInput(original, "Kill" );
 
         //Spawn a replacement at the same position
@@ -149,7 +162,9 @@ ConvertSpawns()
             ;
         if(IsValidEntity(converted))
         {
-            SetEntPropVector(converted, Prop_Send, "m_vecOrigin", position);
+            DispatchKeyValueVector(converted, "origin", pos);
+            DispatchKeyValueVector(converted, "angles", ang);
+            DispatchKeyValue(converted, "StartDisabled", "0");
             DispatchSpawn(converted);
             ActivateEntity(converted);
         }
@@ -159,14 +174,50 @@ ConvertSpawns()
 
 }
 
+ConvertWhiskey()
+{
+    new count = 0;
+    new original  = INVALID_ENT_REFERENCE;
+    new converted = INVALID_ENT_REFERENCE;
+    new Float:pos[3], Float:ang[3];
+
+    while((original = FindEntityByClassname(original, "item_whiskey")) != INVALID_ENT_REFERENCE)
+    {
+        //Get original's position and remove it
+        GetEntPropVector(original, Prop_Send, "m_vecOrigin", pos);
+        GetEntPropVector(original, Prop_Send, "m_angRotation", ang);
+        AcceptEntityInput(original, "Kill" );
+
+        //Spawn a replacement at the same position
+        converted = CreateEntityByName("weapon_walker");//TODO
+        if(IsValidEntity(converted))
+        {
+            DispatchKeyValueVector(converted, "origin", pos);
+            DispatchKeyValueVector(converted, "angles", ang);
+            DispatchSpawn(converted);
+            ActivateEntity(converted);
+        }
+
+        count++;
+    }
+}
+
 SpawnZombieTeamplay()
 {
     new ent = CreateEntityByName("fof_teamplay");
     if(IsValidEntity(ent))
     {
-        SetEntProp(ent, Prop_Data, "m_bRoundBased", 1);
-        SetEntProp(ent, Prop_Data, "m_nRespawnSystem", 1);
-        SetEntProp(ent, Prop_Data, "m_bSwitchTeams", 0);
+        DispatchKeyValue(ent, "targetname", "tpzombie");
+
+        DispatchKeyValue(ent, "RoundBased", "1");
+        DispatchKeyValue(ent, "RespawnSystem", "1");
+        DispatchKeyValue(ent, "SwitchTeams", "1");
+
+        DispatchKeyValue(ent, "OnRoundTimeEnd", "!self,InputVigVictory,,0,-1");
+        DispatchKeyValue(ent, "OnNewBuyRound", "!self,RoundTime,30,0,-1");
+        DispatchKeyValue(ent, "OnNoDespAlive", "!self,InputRespawnPlayers,-2,0,-1");
+        DispatchKeyValue(ent, "OnNoVigAlive", "!self,InputDespVictory,,0,-1");
+
         DispatchSpawn(ent);
         ActivateEntity(ent);
 
@@ -177,17 +228,6 @@ SpawnZombieTeamplay()
     }
 
     return ent;
-}
-
-//Human Spawn
-ConvertInfoPlayerDesperado(old)
-{
-    new ent = CreateEntityByName("info_player_desperado");
-    if(IsValidEntity(ent))
-    {
-        DispatchSpawn(ent);
-        ActivateEntity(ent);
-    }
 }
 
 bool:IsEnabled()
