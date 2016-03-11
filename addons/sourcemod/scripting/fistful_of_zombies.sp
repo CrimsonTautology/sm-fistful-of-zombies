@@ -159,7 +159,7 @@ public OnConfigsExecuted()
 {
     if(!IsEnabled()) return;
 
-	SetGameDescription(GAME_DESCRIPTION);
+    SetGameDescription(GAME_DESCRIPTION);
 }
 
 public Event_PlayerActivate(Handle:event, const String:name[], bool:dontBroadcast)
@@ -301,12 +301,6 @@ LoadFOZFile(String:file[],
 {
     decl String:path[PLATFORM_MAX_PATH];
     BuildPath(Path_SM, path, sizeof(path), "configs/%s", file);
-
-    if(gear_primary_table != INVALID_HANDLE) CloseHandle(gear_primary_table);
-    gear_primary_total_weight = 0;
-
-    if(gear_secondary_table != INVALID_HANDLE) CloseHandle(gear_secondary_table);
-    gear_secondary_total_weight = 0;
 
     new Handle:config = CreateKeyValues("fistful_of_zombies");
     if(!FileToKeyValues(config, path))
