@@ -36,6 +36,9 @@ desc "Copy compiled project to development server"
 task :install do
   #Install smx files
   install_filetype '*.smx', PLUGINS
+
+  #Install data configfiles
+  install_filetype '*.txt', CONFIGS
 end
  
 desc "Clean up compiled files"

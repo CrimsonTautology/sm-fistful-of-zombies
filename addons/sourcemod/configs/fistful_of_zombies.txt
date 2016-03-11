@@ -1,10 +1,38 @@
 fistful_of_zombies
 {
     //Loot that will randomly spawn in the map
-	loot
+	"loot"
 	{
-		nothing	{ weight 0.5}
-		weapon_walker	{ weight 0.1}
+		nothing	{ weight 128 }
+
+        weapon_knife { weight 64 }
+        weapon_axe { weight 32 }
+        weapon_machete { weight 2 }
+
+        weapon_dynamite { weight 32 } 
+        weapon_dynamite_black { weight 16 }
+
+        weapon_deringer { weight 64 }
+        weapon_coltnavy { weight 32 }
+        weapon_schofield { weight 16 }
+        weapon_volcanic { weight 32 }
+        weapon_maresleg { weight 16 }
+        weapon_peacemaker { weight 4 }
+        weapon_walker { weight 2 }
+
+        weapon_sawedoff_shotgun { weight 64 }
+        weapon_coachgun { weight 4 }
+        weapon_shotgun { weight 2 }
+
+        weapon_bow { weight 32 }
+        weapon_carbine { weight 16 }
+        weapon_henryrifle { weight 4 }
+        weapon_sharps { weight 2 }
+
+        weapon_whiskey { weight 16 }
+
+        weapon_smg1 { weight 1 }
+        weapon_rpg { weight 1 }
 	}
 
     //A random list of gear a player can start with
