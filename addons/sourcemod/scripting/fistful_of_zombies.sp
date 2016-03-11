@@ -41,7 +41,11 @@ new Handle:g_Cvar_TeamsUnbalanceLimit = INVALID_HANDLE;
 new Handle:g_Cvar_Autoteambalance = INVALID_HANDLE;
 
 new Handle:g_GearPrimaryTable = INVALID_HANDLE;
+new g_GearPrimaryTotalWeight;
+
 new Handle:g_GearSecondaryTable = INVALID_HANDLE;
+new g_GearSecondaryTotalWeight;
+
 new Handle:g_LootTable = INVALID_HANDLE;
 new g_LootTotalWeight;
 
@@ -112,7 +116,11 @@ public OnMapStart()
     //Load configuration
     decl String:file[PLATFORM_MAX_PATH];
     GetConVarString(g_Cvar_Config, file, sizeof(file));
-    LoadFOZFile(file, g_GearTable, g_LootTable, g_LootTotalWeight);
+    LoadFOZFile(file,
+        g_GearPrimaryTable, g_GearPrimaryTotalWeight,
+        g_GearSecondaryTable, g_GearSecondaryTotalWeight,
+        g_LootTable, g_LootTotalWeight
+        );
 
     //Cache materials
     PrecacheSound(SOUND_ROUNDSTART, true);
@@ -214,19 +222,21 @@ public Action:Command_Zombie(client, args)
     return Plugin_Handled;
 }
 
-LoadFOZFile(String:file[], &Handle:gear_table, &Handle:loot_table, &loot_total_weight)
+LoadFOZFile(String:file[],
+    &Handle:gear_primary_table, &gear_primary_total_weight,
+    &Handle:gear_secondary_table, &gear_secondary_total_weight,
+    &Handle:loot_table, &loot_total_weight)
 {
-    decl String:path[PLATFORM_MAX_PATH], String:key[MAX_KEY_LENGTH];
-    new weight;
+    decl String:path[PLATFORM_MAX_PATH];
     BuildPath(Path_SM, path, sizeof(path), "configs/%s", file);
 
-    //if(gear_table != INVALID_HANDLE) CloseHandle(gear_table);
-    if(loot_table != INVALID_HANDLE) CloseHandle(loot_table);
-    loot_total_weight = 0;
+    if(gear_primary_table != INVALID_HANDLE) CloseHandle(gear_primary_table);
+    gear_primary_total_weight = 0;
 
-    //gear_table = CreateKeyValues("gear");
+    if(gear_secondary_table != INVALID_HANDLE) CloseHandle(gear_secondary_table);
+    gear_secondary_total_weight = 0;
+
     new Handle:config = CreateKeyValues("fistful_of_zombies");
-
     if(!FileToKeyValues(config, path))
     {
         LogError("Could not read map rotation file \"%s\"", file);
@@ -235,37 +245,52 @@ LoadFOZFile(String:file[], &Handle:gear_table, &Handle:loot_table, &loot_total_w
     }
 
     //Read the default "loot" key and build the loot table
-    if(KvJumpToKey(config, "loot"))
-    {
-        loot_table = CreateKeyValues("loot");
-        KvCopySubkeys(config, loot_table);
+    BuildWeightTable(config, "loot", loot_table, loot_total_weight);
+    BuildWeightTable(config, "gear_primary", gear_primary_table, gear_primary_total_weight);
+    BuildWeightTable(config, "gear_secondary", gear_secondary_table, gear_secondary_total_weight);
 
-        KvGotoFirstSubKey(config);
+    CloseHandle(config);
+}
+
+//Build a table for randomly selecting a weighted value
+BuildWeightTable(Handle:kv, const String:name[], &Handle:table, &total_weight)
+{
+    decl String:key[MAX_KEY_LENGTH];
+    new weight;
+
+    if(table != INVALID_HANDLE) CloseHandle(table);
+    total_weight = 0;
+
+    KvRewind(kv);
+
+    if(KvJumpToKey(kv, name))
+    {
+        table = CreateKeyValues(name);
+        KvCopySubkeys(kv, table);
+
+        KvGotoFirstSubKey(kv);
         do
         {
-            KvGetSectionName(config, key, sizeof(key));
-            weight = KvGetNum(config, "weight", 0);
+            KvGetSectionName(kv, key, sizeof(key));
+            weight = KvGetNum(kv, "weight", 0);
 
 
             //Ignore values that do not have a weight or 0 weight
             if(weight > 0)
             {
-                loot_total_weight += weight;
+                total_weight += weight;
                 
-                PrintToServer( "Add: %s (%d) (%d)", key, weight, loot_total_weight);
+                PrintToServer( "Add[%s]: %s (%d) (%d)", name, key, weight, total_weight);
             }
         }
-        while(KvGotoNextKey(config));
+        while(KvGotoNextKey(kv));
 
     }else{
-        LogError("A valid \"loot\" key was not defined in \"%s\"", file);
-        SetFailState("A valid \"loot\" key was not defined in \"%s\"", file);
+        LogError("A valid \"%s\" key was not defined", name);
+        SetFailState("A valid \"%s\" key was not defined", name);
     }
 
-    KvRewind(config);
-
-
-
+    KvRewind(kv);
 }
 
 SetDefaultConVars()
@@ -336,7 +361,7 @@ ConvertWhiskey(Handle:loot_table, loot_total_weight)
         AcceptEntityInput(original, "Kill" );
 
         //Spawn a replacement at the same position
-        GetRandomLootFromTable(loot_table, loot_total_weight, loot, sizeof(loot));
+        GetRandomValueFromTable(loot_table, loot_total_weight, loot, sizeof(loot));
         if(StrEqual(loot, "nothing", false)) continue;
 
         converted = CreateEntityByName(loot);//TODO
@@ -409,24 +434,24 @@ stock BecomeZombie(client)
     ChangeClientTeam(client, ZOMBIE_TEAM);
 }
 
-stock bool:GetRandomLootFromTable(Handle:loot_table, loot_total_weight, String:loot[], length)
+stock bool:GetRandomValueFromTable(Handle:table, total_weight, String:value[], length)
 {
     new weight;
-    new rand = GetRandomInt(0, loot_total_weight - 1);
+    new rand = GetRandomInt(0, total_weight - 1);
 
-    KvRewind(loot_table);
-    KvGotoFirstSubKey(loot_table);
+    KvRewind(table);
+    KvGotoFirstSubKey(table);
     do
     {
-        KvGetSectionName(loot_table, loot, length);
-        weight = KvGetNum(loot_table, "weight", 0);
+        KvGetSectionName(table,  length);
+        weight = KvGetNum(table, "weight", 0);
         if(weight <= 0) continue;
 
         if(rand < weight) return true;
         rand -= weight;
     }
-    while(KvGotoNextKey(loot_table));
-    KvRewind(loot_table);
+    while(KvGotoNextKey(table));
+    KvRewind(table);
 
     return false;
 }
