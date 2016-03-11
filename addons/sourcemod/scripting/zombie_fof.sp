@@ -105,12 +105,13 @@ public Event_PlayerSpawn(Handle:event, const String:name[], bool:dontBroadcast)
 
 public Event_PlayerDeath(Handle:event, const String:name[], bool:dontBroadcast)
 {
-    new client = GetClientOfUserId(GetEventInt(event, "userid"));
+    new userid = GetEventInt(event, "userid");
+    new client = GetClientOfUserId(userid);
 
     //A dead human becomes a zombie
     if(IsHuman(client))
     {
-        BecomeZombie(client);
+        CreateTimer(1.0, Timer_BecomeZombie, userid, TIMER_FLAG_NO_MAPCHANGE);
     }
 }
 
@@ -120,13 +121,24 @@ public Event_RoundStart(Event:event, const String:name[], bool:dontBroadcast)
     RemoveCrates();
 }
 
+public Action:Timer_BecomeZombie(Handle:timer, any:userid)
+{
+    new client = GetClientOfUserId(userid);
+
+    if(client <= 0) return Plugin_Handled;
+    if(!IsClientInGame(client)) return Plugin_Handled;
+
+    BecomeZombie(client);
+
+    return Plugin_Handled;
+}
+
 public Action:Hook_OnWeaponCanUse(client, weapon)
 {
     //Block zombies from picking up guns
     if (IsZombie(client)) {
         decl String:class[WEAPON_NAME_SIZE];
         GetEntityClassname(weapon, class, sizeof(class));
-        PrintToServer("Hit OnWeaponUse %s - %L", class, client); //TODO
 
         if (!StrEqual(class, "weapon_fists")) { //TODO have whitelist mechanic
             PrintCenterText(client, "Zombies Can Not Use Guns"); 
@@ -164,7 +176,8 @@ public Action:Command_Zombie(client, args)
         return Plugin_Handled;
     }
 
-    PrintToChat(client, "team = %d", GetClientTeam(client));
+    //PrintToChat(client, "team = %d", GetClientTeam(client));
+    AcceptEntityInput(g_Teamplay, "InputVigVictory");
 
     return Plugin_Handled;
 }
@@ -236,7 +249,7 @@ ConvertWhiskey()
         AcceptEntityInput(original, "Kill" );
 
         //Spawn a replacement at the same position
-        converted = CreateEntityByName("weapon_walker");//TODO
+        converted = CreateEntityByName("weapon_smg1");//TODO
         if(IsValidEntity(converted))
         {
             DispatchKeyValueVector(converted, "origin", pos);
