@@ -111,7 +111,7 @@ public Event_PlayerDeath(Handle:event, const String:name[], bool:dontBroadcast)
     //A dead human becomes a zombie
     if(IsHuman(client))
     {
-        CreateTimer(1.0, Timer_BecomeZombie, userid, TIMER_FLAG_NO_MAPCHANGE);
+        CreateTimer(1.0, Timer_HumanDeathDelay, userid, TIMER_FLAG_NO_MAPCHANGE);
     }
 }
 
@@ -121,7 +121,7 @@ public Event_RoundStart(Event:event, const String:name[], bool:dontBroadcast)
     RemoveCrates();
 }
 
-public Action:Timer_BecomeZombie(Handle:timer, any:userid)
+public Action:Timer_HumanDeathDelay(Handle:timer, any:userid)
 {
     new client = GetClientOfUserId(userid);
 
@@ -273,10 +273,13 @@ SpawnZombieTeamplay()
         DispatchKeyValue(ent, "RespawnSystem", "1");
         DispatchKeyValue(ent, "SwitchTeams", "1");
 
-        DispatchKeyValue(ent, "OnRoundTimeEnd", "!self,InputVigVictory,,0,-1");
-        DispatchKeyValue(ent, "OnNewBuyRound", "!self,RoundTime,30,0,-1");
-        DispatchKeyValue(ent, "OnNoDespAlive", "!self,InputRespawnPlayers,-2,0,-1");
-        DispatchKeyValue(ent, "OnNoVigAlive", "!self,InputDespVictory,,0,-1");
+        DispatchKeyValue(ent, "OnNewRound",      "!self,RoundTime,30,0,-1");
+        DispatchKeyValue(ent, "OnNewRound",      "!self,ExtraTime,330,0.1,-1");
+        DispatchKeyValue(ent, "OnRoundTimeEnd",  "!self,InputVigVictory,,0,-1");
+        DispatchKeyValue(ent, "OnTimerEnd",      "!self,ExtraTime,30,0.1,-1");
+        DispatchKeyValue(ent, "OnTimerEnd",      "!self,InputRespawnPlayers,-2,0,-1");
+        DispatchKeyValue(ent, "OnNoDespAlive",   "!self,InputRespawnPlayers,-2,0,-1");
+        DispatchKeyValue(ent, "OnNoVigAlive",    "!self,InputDespVictory,,0,-1");
 
         DispatchSpawn(ent);
         ActivateEntity(ent);
