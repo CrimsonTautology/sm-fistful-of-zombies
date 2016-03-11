@@ -35,6 +35,7 @@
 new Handle:g_Cvar_Enabled = INVALID_HANDLE;
 new Handle:g_Cvar_Config = INVALID_HANDLE;
 new Handle:g_Cvar_RoundTime = INVALID_HANDLE;
+new Handle:g_Cvar_RespawnTime = INVALID_HANDLE;
 
 new Handle:g_Cvar_TeambalanceAllowed = INVALID_HANDLE;
 new Handle:g_Cvar_TeamsUnbalanceLimit = INVALID_HANDLE;
@@ -89,6 +90,12 @@ public OnPluginStart()
             "How long surviors have to survive in seconds to win a round in Fistful of Zombies",
             FCVAR_PLUGIN);
 
+    g_Cvar_RespawnTime = CreateConVar(
+            "foz_respawn_time",
+            "15",
+            "How long zombies have to wait before respawning in Fistful of Zombies",
+            FCVAR_PLUGIN);
+
     HookEvent("player_activate", Event_PlayerActivate);
     HookEvent("player_spawn", Event_PlayerSpawn);
     HookEvent("player_death", Event_PlayerDeath);
@@ -97,9 +104,8 @@ public OnPluginStart()
     RegAdminCmd("sm_zombie", Command_Zombie, ADMFLAG_ROOT, "TEST command");//TODO
 
     AddCommandListener(Command_JoinTeam, "jointeam");
-     //"PGUP" = "equipmenu"
-     //"PGDN" = "chooseteam"
-
+    AddCommandListener(Command_JoinTeam, "equipmenu");
+    AddCommandListener(Command_JoinTeam, "chooseteam");
 
     g_Cvar_TeambalanceAllowed = FindConVar("fof_sv_teambalance_allowed");
     g_Cvar_TeamsUnbalanceLimit = FindConVar("mp_teams_unbalance_limit");
