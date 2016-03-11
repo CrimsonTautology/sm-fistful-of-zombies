@@ -58,6 +58,11 @@ public OnPluginStart()
 
     RegAdminCmd("sm_zombie", Command_Zombie, ADMFLAG_ROOT, "TEST command");//TODO
 
+    AddCommandListener(Command_JoinTeam, "jointeam");
+     //"PGUP" = "equipmenu"
+     //"PGDN" = "chooseteam"
+
+
     g_Cvar_TeambalanceAllowed = FindConVar("fof_sv_teambalance_allowed");
     g_Cvar_TeamsUnbalanceLimit = FindConVar("mp_teams_unbalance_limit");
     g_Cvar_Autoteambalance = FindConVar("mp_autoteambalance");
@@ -108,6 +113,22 @@ public Event_RoundStart(Event:event, const String:name[], bool:dontBroadcast)
     ConvertWhiskey();
     RemoveCrates();
 }
+
+
+public Action:Command_JoinTeam(client, const String:command[], args) 
+{ 
+    if (!IsClientInGame(client)) return Plugin_Continue; 
+    if (client == 0) return Plugin_Continue; 
+
+    if (GetClientTeam(client) > 1) 
+    { 
+        PrintCenterText(client, "Can Not Change Teams Midgame"); 
+        PrintToChat(client, "Can Not Change Teams Midgame"); 
+        return Plugin_Stop; 
+    } 
+
+    return Plugin_Continue;
+}  
 
 public Action:Command_Zombie(client, args)
 {
@@ -237,12 +258,12 @@ bool:IsEnabled()
 
 bool:IsHuman(client)
 {
-    GetClientTeam(client) == HUMAN_TEAM;
+    return GetClientTeam(client) == HUMAN_TEAM;
 }
 
 bool:IsZombie(client)
 {
-    GetClientTeam(client) == ZOMBIE_TEAM;
+    return GetClientTeam(client) == ZOMBIE_TEAM;
 }
 
 BecomeHuman(client)
