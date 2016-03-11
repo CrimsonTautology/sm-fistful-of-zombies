@@ -105,14 +105,19 @@ public OnPluginStart()
 
 public OnClientPostAdminCheck(client)
 {
+    if(!IsEnabled()) return;
+
     SDKHook(client, SDKHook_WeaponCanUse, Hook_OnWeaponCanUse);
 }
 public OnClientDisconnect(client)
 {
+    if(!IsEnabled()) return;
 }
 
 public OnMapStart()
 {
+    if(!IsEnabled()) return;
+
     //Load configuration
     decl String:file[PLATFORM_MAX_PATH];
     GetConVarString(g_Cvar_Config, file, sizeof(file));
@@ -132,11 +137,13 @@ public OnMapStart()
 
 public OnConfigsExecuted()
 {
+    if(!IsEnabled()) return;
 	//SetGameDescription(GAME_DESCRIPTION);
 }
 
 public Event_PlayerActivate(Handle:event, const String:name[], bool:dontBroadcast)
 {
+    if(!IsEnabled()) return;
 }
 
 public Event_PlayerSpawn(Handle:event, const String:name[], bool:dontBroadcast)
@@ -163,6 +170,8 @@ public Event_PlayerDeath(Handle:event, const String:name[], bool:dontBroadcast)
 
 public Event_RoundStart(Event:event, const String:name[], bool:dontBroadcast)
 {
+    if(!IsEnabled()) return;
+
     ConvertWhiskey(g_LootTable, g_LootTotalWeight);
     RemoveCrates();
 }
@@ -171,15 +180,15 @@ public Action:Timer_PlayerSpawnDelay(Handle:timer, any:userid)
 {
     new client = GetClientOfUserId(userid);
 
+    if(!IsEnabled()) return Plugin_Handled;
     if(client <= 0) return Plugin_Handled;
     if(!IsClientInGame(client)) return Plugin_Handled;
     if(!IsPlayerAlive(client)) return Plugin_Handled;
-    if(!IsEnabled()) return Plugin_Handled;
 
     //If a player spawns as human give them their primary and secondary gear
     if(IsHuman(client))
     {
-        new String:weapon[WEAPON_NAME_SIZE];
+        new String:weapon[MAX_KEY_LENGTH];
 
         GetRandomValueFromTable(g_GearSecondaryTable, g_GearSecondaryTotalWeight, weapon, sizeof(weapon));
         ForceEquipWeapon(client, weapon, true);
@@ -195,6 +204,7 @@ public Action:Timer_HumanDeathDelay(Handle:timer, any:userid)
 {
     new client = GetClientOfUserId(userid);
 
+    if(!IsEnabled()) return Plugin_Handled;
     if(client <= 0) return Plugin_Handled;
     if(!IsClientInGame(client)) return Plugin_Handled;
 
@@ -205,6 +215,8 @@ public Action:Timer_HumanDeathDelay(Handle:timer, any:userid)
 
 public Action:Hook_OnWeaponCanUse(client, weapon)
 {
+    if(!IsEnabled()) return Plugin_Continue;
+
     //Block zombies from picking up guns
     if (IsZombie(client)) {
         decl String:class[MAX_KEY_LENGTH];
@@ -224,6 +236,7 @@ public Action:Hook_OnWeaponCanUse(client, weapon)
 
 public Action:Command_JoinTeam(client, const String:command[], args) 
 { 
+    if(!IsEnabled()) return Plugin_Continue;
     if (!IsClientInGame(client)) return Plugin_Continue; 
     if (client == 0) return Plugin_Continue; 
 
@@ -473,11 +486,14 @@ stock bool:GetRandomValueFromTable(Handle:table, total_weight, String:value[], l
     KvGotoFirstSubKey(table);
     do
     {
-        KvGetSectionName(table,  length);
+        KvGetSectionName(table, value, length);
         weight = KvGetNum(table, "weight", 0);
         if(weight <= 0) continue;
 
-        if(rand < weight) return true;
+        if(rand < weight){
+            KvRewind(table);
+            return true;
+        }
         rand -= weight;
     }
     while(KvGotoNextKey(table));
@@ -488,7 +504,7 @@ stock bool:GetRandomValueFromTable(Handle:table, total_weight, String:value[], l
 
 stock ForceEquipWeapon(client, const String:weapon[], bool second=false)
 {
-    new String:tmp[WEAPON_NAME_SIZE];
+    new String:tmp[MAX_KEY_LENGTH];
 
     GivePlayerItem(client, weapon);
 
