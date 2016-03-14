@@ -23,6 +23,7 @@
 
 #define MAX_KEY_LENGTH	    128
 #define MAX_TABLE   	    128
+#define INFECTION_LIMIT     100.0
 
 #define GAME_DESCRIPTION    "Fistful Of Zombies"
 #define SOUND_ROUNDSTART    "music/standoff1.mp3"
@@ -62,6 +63,8 @@ new g_Model_Ranger;
 new g_Model_Ghost;
 new g_Model_Skeleton;
 new g_Model_Train;
+
+new bool:g_Infected[MAXPLAYERS+1] = false;
 
 public Plugin:myinfo =
 {
@@ -303,7 +306,9 @@ public Action:Timer_Repeat(Handle:timer)
 
         if(IsHuman(client))
         {
-            //new Float:drunkness 
+            new Float:drunkness = GetEntPropFloat(client, Prop_Send, "m_flDrunkness");
+
+            if(drunkness > INFECTION_LIMIT) 
 
         }else if(IsZombie(client))
         {
@@ -626,6 +631,25 @@ stock RandomizeTeams()
     {
         JoinZombieTeam(clients[i]);
     }
+}
+
+stock bool:IsInfected(client)
+{
+    return g_Infected[client];
+}
+
+stock Infect(client)
+{
+    g_Infected[client] = true;
+}
+
+stock ResetInfection(client)
+{
+    g_Infected[client] = false;
+}
+
+stock ResetInfectionAll()
+{
 }
 
 stock GetRoundTime()
