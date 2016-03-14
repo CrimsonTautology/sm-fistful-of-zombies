@@ -24,10 +24,11 @@
 #define MAX_KEY_LENGTH	    128
 #define MAX_TABLE   	    128
 #define INFECTION_LIMIT     100.0
+#define VOICE_SCALE         12.0
 
 #define GAME_DESCRIPTION    "Fistful Of Zombies"
 #define SOUND_ROUNDSTART    "music/standoff1.mp3"
-#define SOUND_HEART         "physics/body/body_medium_impact_soft5.wav"
+#define SOUND_HEART         "player/heartbeat.wav"
 #define SOUND_NOPE          "player/voice/no_no1.wav"
 
 #define ZOMBIE_TEAM         3   //Desperados
@@ -92,7 +93,7 @@ public OnPluginStart()
 
     g_Cvar_RoundTime = CreateConVar(
             "foz_round_time",
-            "360",
+            "120",
             "How long surviors have to survive in seconds to win a round in Fistful of Zombies",
             FCVAR_PLUGIN);
 
@@ -129,6 +130,8 @@ public OnPluginStart()
     g_Cvar_Autoteambalance = FindConVar("mp_autoteambalance");
 
     AutoExecConfig();
+
+    AddNormalSoundHook(SoundCallback);
 }
 
 public OnClientPostAdminCheck(client)
@@ -157,6 +160,7 @@ public OnMapStart()
 
     //Cache materials
     PrecacheSound(SOUND_ROUNDSTART, true);
+    PrecacheSound(SOUND_NOPE, true);
 
     g_Model_Vigilante = PrecacheModel("models/playermodels/player1.mdl");
     g_Model_Desperado = PrecacheModel("models/playermodels/player2.mdl");
@@ -195,7 +199,7 @@ public Event_PlayerSpawn(Handle:event, const String:name[], bool:dontBroadcast)
     if(!IsEnabled()) return;
 
     new userid = GetEventInt(event, "userid");
-    CreateTimer(0.0, Timer_PlayerSpawnDelay, userid, TIMER_FLAG_NO_MAPCHANGE);
+    CreateTimer(0.1, Timer_PlayerSpawnDelay, userid, TIMER_FLAG_NO_MAPCHANGE);
 }
 
 public Event_PlayerDeath(Handle:event, const String:name[], bool:dontBroadcast)
@@ -205,11 +209,14 @@ public Event_PlayerDeath(Handle:event, const String:name[], bool:dontBroadcast)
     new userid = GetEventInt(event, "userid");
     new client = GetClientOfUserId(userid);
 
+    //Announce the death
+    PrintCenterTextAll("Survivor %l has turned...", client);
+    EmitSoundToAll(SOUND_HEART);
+
     //A dead human becomes a zombie
     if(IsHuman(client))
     {
-        //CreateTimer(0.1, Timer_HumanDeathDelay, userid, TIMER_FLAG_NO_MAPCHANGE);
-        JoinZombieTeam(client);
+        CreateTimer(1.0, Timer_HumanDeathDelay, userid, TIMER_FLAG_NO_MAPCHANGE);
     }
 }
 
@@ -245,8 +252,7 @@ public Action:Event_PlayerTeam(Event:event, const String:name[], bool:dontBroadc
     if(team == HUMAN_TEAM && GetTime() - g_RoundStart > 15)
     {
         PrintToServer("-------------blocked %L from joining %d (was %d)", client, team, oldteam);
-        //CreateTimer(0.1, Timer_HumanDeathDelay, userid, TIMER_FLAG_NO_MAPCHANGE);
-        JoinZombieTeam(client);
+        CreateTimer(0.1, Timer_HumanDeathDelay, userid, TIMER_FLAG_NO_MAPCHANGE);
 
         return Plugin_Handled;
     }
@@ -274,6 +280,7 @@ public Action:Timer_PlayerSpawnDelay(Handle:timer, any:userid)
     {
         //Force client model
         SetClientModelIndex(client, g_Model_Skeleton);
+        SetClientOverlay(client, "debug/yuv");
 
         PrintCenterText(client, "Ughhhh..... BRAINNNSSSS"); 
     }
@@ -327,6 +334,7 @@ public Action:Hook_OnWeaponCanUse(client, weapon)
         GetEntityClassname(weapon, class, sizeof(class));
 
         if (!StrEqual(class, "weapon_fists")) { //TODO have whitelist mechanic
+            EmitSoundToClient(client, SOUND_NOPE);
             PrintCenterText(client, "Zombies Can Not Use Guns"); 
             PrintToChat(client, "Zombies Can Not Use Guns"); 
 
@@ -347,6 +355,7 @@ public Action:Command_JoinTeam(client, const String:command[], args)
     //Block non-spectators from changing teams
     if (GetClientTeam(client) > 1) 
     { 
+        EmitSoundToClient(client, SOUND_NOPE);
         PrintCenterText(client, "Can Not Change Teams Midgame"); 
         PrintToChat(client, "Can Not Change Teams Midgame"); 
         return Plugin_Stop; 
@@ -354,6 +363,31 @@ public Action:Command_JoinTeam(client, const String:command[], args)
 
     return Plugin_Continue;
 }  
+
+public Action:SoundCallback(clients[64], &numClients, String:sample[PLATFORM_MAX_PATH], &entity, &channel, &Float:volume, &level, &pitch, &flags)
+{
+    //PrintToServer("---Hit SoundCallBack(%s) by %d: channel(%d) volume(%f) level(%d) pitch(%d) flags(%d)", sample, entity, channel, volume, level, pitch, flags);
+    //---Hit SoundCallBack(#/music/bounty/bounty_objective_stinger1.mp3) by 1: channel(0) volume(0.599609) level(80) pitch(100) flags(0)
+    //---Hit SoundCallBack(player/footsteps/grass3.wav) by 3: channel(4) volume(0.400000) level(70) pitch(100) flags(0)
+    //---Hit SoundCallBack(player/voice2/pain/pl_death2.wav) by 3: channel(0) volume(0.602976) level(95) pitch(104) flags(0)
+    //---Hit SoundCallBack(player/voice2/fistfight_putemup.wav) by 1: channel(0) volume(1.000000) level(95) pitch(97) flags(0)
+
+
+    if (entity > 0 && entity <= MaxClients && channel == 0)
+    {
+        //Change the voice of zombie players
+        if(IsZombie(entity))
+        {
+            //PrintToServer("---Change Voice(%s) by %L: channel(%d) volume(%f) level(%d) pitch(%d) flags(%d)", sample, entity, channel, volume, level, pitch, flags);
+            //TODO change voice file?
+            //Next expression is ((175/(1+6x))+75) so results stay between 75 and 250 with 100 pitch at normal size.
+            pitch = RoundToNearest(50.0);
+            flags |= SND_CHANGEPITCH;
+            return Plugin_Changed;
+        }
+    }
+    return Plugin_Continue;
+}
 
 public Action:Command_Zombie(client, args)
 {
@@ -756,6 +790,22 @@ StripWeapons(client)
 stock bool SetClientModelIndex(client, index)
 {
     SetEntProp(client, Prop_Data, "m_nModelIndex", index, 2);
+}
+
+stock SetClientOverlay(client, String:strOverlay[])
+{
+    if(client <= 0) return;
+    if(!IsClientInGame(client)) return;
+
+    //Allow cheat command
+    new original = GetCommandFlags("r_screenoverlay");
+    new flags =  original & (~FCVAR_CHEAT);
+    SetCommandFlags("r_screenoverlay", flags);
+
+    ClientCommand(client, "r_screenoverlay \"%s\"", strOverlay);
+
+    //Revert to original
+    SetCommandFlags("r_screenoverlay", original);
 }
 
 stock bool:SetGameDescription(String:description[], bool:override = true)

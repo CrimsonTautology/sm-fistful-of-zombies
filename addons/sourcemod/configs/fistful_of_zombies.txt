@@ -3,7 +3,7 @@ fistful_of_zombies
     //Loot that will randomly spawn in the map
 	"loot"
 	{
-		nothing	{ weight 100 }
+		nothing	{ weight 50 }
 
         weapon_knife { weight 11 }
         weapon_deringer { weight 11 }
