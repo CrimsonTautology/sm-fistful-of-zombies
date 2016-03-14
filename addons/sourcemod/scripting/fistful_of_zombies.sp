@@ -63,7 +63,6 @@ new g_Model_Ghost;
 new g_Model_Skeleton;
 new g_Model_Train;
 
-
 public Plugin:myinfo =
 {
 	name = PLUGIN_NAME,
@@ -206,7 +205,8 @@ public Event_PlayerDeath(Handle:event, const String:name[], bool:dontBroadcast)
     //A dead human becomes a zombie
     if(IsHuman(client))
     {
-        CreateTimer(1.0, Timer_HumanDeathDelay, userid, TIMER_FLAG_NO_MAPCHANGE);
+        //CreateTimer(0.1, Timer_HumanDeathDelay, userid, TIMER_FLAG_NO_MAPCHANGE);
+        JoinZombieTeam(client);
     }
 }
 
@@ -242,7 +242,9 @@ public Action:Event_PlayerTeam(Event:event, const String:name[], bool:dontBroadc
     if(team == HUMAN_TEAM && GetTime() - g_RoundStart > 15)
     {
         PrintToServer("-------------blocked %L from joining %d (was %d)", client, team, oldteam);
-        CreateTimer(0.1, Timer_HumanDeathDelay, userid, TIMER_FLAG_NO_MAPCHANGE);
+        //CreateTimer(0.1, Timer_HumanDeathDelay, userid, TIMER_FLAG_NO_MAPCHANGE);
+        JoinZombieTeam(client);
+
         return Plugin_Handled;
     }
 
@@ -286,7 +288,6 @@ public Action:Timer_HumanDeathDelay(Handle:timer, any:userid)
 
     JoinZombieTeam(client);
     SetClientModelIndex(client, g_Model_Skeleton);
-    //SetClientModelIndex(client, g_Model_Train);
 
     return Plugin_Handled;
 }
@@ -300,7 +301,11 @@ public Action:Timer_Repeat(Handle:timer)
         if(!IsClientInGame(client)) continue;
         if(!IsPlayerAlive(client)) continue;
 
-        if(IsZombie(client))
+        if(IsHuman(client))
+        {
+            //new Float:drunkness 
+
+        }else if(IsZombie(client))
         {
             StripWeapons(client);
         }
