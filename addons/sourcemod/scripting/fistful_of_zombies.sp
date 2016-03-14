@@ -28,7 +28,10 @@
 
 #define GAME_DESCRIPTION    "Fistful Of Zombies"
 #define SOUND_ROUNDSTART    "music/standoff1.mp3"
-#define SOUND_HEART         "player/heartbeat.wav"
+#define SOUND_VULTURE1      "animals/vulture1.wav"
+#define SOUND_VULTURE2      "animals/vulture2.wav"
+#define SOUND_VULTURE3      "animals/vulture3.wav"
+#define SOUND_STINGER       "music/kill1.wav"
 #define SOUND_NOPE          "player/voice/no_no1.wav"
 
 #define ZOMBIE_TEAM         3   //Desperados
@@ -160,6 +163,10 @@ public OnMapStart()
 
     //Cache materials
     PrecacheSound(SOUND_ROUNDSTART, true);
+    PrecacheSound(SOUND_VULTURE1, true);
+    PrecacheSound(SOUND_VULTURE2, true);
+    PrecacheSound(SOUND_VULTURE3, true);
+    PrecacheSound(SOUND_STINGER, true);
     PrecacheSound(SOUND_NOPE, true);
 
     g_Model_Vigilante = PrecacheModel("models/playermodels/player1.mdl");
@@ -209,13 +216,14 @@ public Event_PlayerDeath(Handle:event, const String:name[], bool:dontBroadcast)
     new userid = GetEventInt(event, "userid");
     new client = GetClientOfUserId(userid);
 
-    //Announce the death
-    PrintCenterTextAll("Survivor %l has turned...", client);
-    EmitSoundToAll(SOUND_HEART);
 
     //A dead human becomes a zombie
     if(IsHuman(client))
     {
+        //Announce the death
+        PrintCenterTextAll("Survivor %N has turned...", client);
+        EmitSoundToAll(SOUND_STINGER, .flags = SND_CHANGEPITCH, .pitch = 80);
+
         CreateTimer(1.0, Timer_HumanDeathDelay, userid, TIMER_FLAG_NO_MAPCHANGE);
     }
 }
