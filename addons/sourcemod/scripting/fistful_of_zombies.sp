@@ -610,8 +610,8 @@ stock RandomizeTeams()
         if(!IsClientInGame(client)) continue;
         if(!( IsZombie(client) || IsHuman(client) )) continue;
 
-        client_count++;
         clients[client_count] = client;
+        client_count++;
     }
 
     SortIntegers(clients, client_count, Sort_Random);
