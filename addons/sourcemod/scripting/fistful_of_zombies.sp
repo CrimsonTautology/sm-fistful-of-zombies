@@ -99,6 +99,15 @@ public OnPluginStart()
             "How long zombies have to wait before respawning in Fistful of Zombies",
             FCVAR_PLUGIN);
 
+    g_Cvar_Ratio = CreateConVar(
+            "foz_ratio",
+            "0.75",
+            "Percentage of players that start as human.",
+            FCVAR_PLUGIN
+            true, "0.01",
+            true, "1.0");
+
+
     HookEvent("player_activate", Event_PlayerActivate);
     HookEvent("player_spawn", Event_PlayerSpawn);
     HookEvent("player_death", Event_PlayerDeath);
@@ -283,7 +292,7 @@ public Action:Timer_HumanDeathDelay(Handle:timer, any:userid)
     if(client <= 0) return Plugin_Handled;
     if(!IsClientInGame(client)) return Plugin_Handled;
 
-    BecomeZombie(client);
+    JoinZombieTeam(client);
     SetClientModelIndex(client, g_Model_Skeleton);
     //SetClientModelIndex(client, g_Model_Train);
 
@@ -574,12 +583,12 @@ stock bool:IsZombie(client)
     return GetClientTeam(client) == ZOMBIE_TEAM;
 }
 
-stock BecomeHuman(client)
+stock JoinHumanTeam(client)
 {
     ChangeClientTeam(client, HUMAN_TEAM);
 }
 
-stock BecomeZombie(client)
+stock JoinZombieTeam(client)
 {
     ChangeClientTeam(client, ZOMBIE_TEAM);
 }
