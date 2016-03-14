@@ -217,6 +217,7 @@ public Event_RoundStart(Event:event, const String:name[], bool:dontBroadcast)
 
     ConvertWhiskey(g_LootTable, g_LootTotalWeight);
     RemoveCrates();
+    RandomizeTeams();
 }
 
 
@@ -598,6 +599,38 @@ stock JoinHumanTeam(client)
 stock JoinZombieTeam(client)
 {
     ChangeClientTeam(client, ZOMBIE_TEAM);
+}
+
+stock RandomizeTeams()
+{
+  decl clients[MAXPLAYERS];
+  new client_count = 0, human_count;
+  new Float:ratio = GetConVarFloat(g_Cvar_Ratio);
+
+  for(new client = 1; client <= MaxClients; client++)
+  {
+      if(!IsClientInGame(client)) continue;
+      if(!( IsZombie(client) || IsHuman(client) )) continue;
+
+      client_count++;
+      clients[client_count] = client;
+  }
+
+  SortIntegers(clients, client_count, Sort_Random);
+
+  //Calculate number of humans;  need at least one
+  human_count = RoundToFloor(client_count * ratio);
+  if(human_count == 0 && client_count > 0) human_count = 1;
+
+  //Assign teams
+  for(new i = 0; i < human_count; i++)
+  {
+      JoinHumanTeam(clients[i]);
+  }
+  for(new i = human_count; i < client_count; i++)
+  {
+      JoinZombieTeam(clients[i]);
+  }
 }
 
 stock GetRoundTime()
