@@ -36,6 +36,7 @@ new Handle:g_Cvar_Enabled = INVALID_HANDLE;
 new Handle:g_Cvar_Config = INVALID_HANDLE;
 new Handle:g_Cvar_RoundTime = INVALID_HANDLE;
 new Handle:g_Cvar_RespawnTime = INVALID_HANDLE;
+new Handle:g_Cvar_Ratio = INVALID_HANDLE;
 
 new Handle:g_Cvar_TeambalanceAllowed = INVALID_HANDLE;
 new Handle:g_Cvar_TeamsUnbalanceLimit = INVALID_HANDLE;
@@ -103,9 +104,9 @@ public OnPluginStart()
             "foz_ratio",
             "0.75",
             "Percentage of players that start as human.",
-            FCVAR_PLUGIN
-            true, "0.01",
-            true, "1.0");
+            FCVAR_PLUGIN,
+            true, 0.01,
+            true, 1.0);
 
 
     HookEvent("player_activate", Event_PlayerActivate);
@@ -537,6 +538,9 @@ ConvertWhiskey(Handle:loot_table, loot_total_weight)
 //Spawn the fof_teamplay entity that will control the game's logic.
 SpawnZombieTeamplay()
 {
+    new String:tmp[512];
+
+
     new ent = CreateEntityByName("fof_teamplay");
     if(IsValidEntity(ent))
     {
@@ -547,9 +551,12 @@ SpawnZombieTeamplay()
         DispatchKeyValue(ent, "SwitchTeams", "1");
 
         //Todo, cvar ExtraTime and RoundTime
-        DispatchKeyValue(ent, "OnNewRound",      "!self,RoundTime,180,0,-1");
+        Format(tmp, sizeof(tmp),                 "!self,RoundTime,%d,0,-1", GetRoundTime());
+        DispatchKeyValue(ent, "OnNewRound",      tmp);
         DispatchKeyValue(ent, "OnNewRound",      "!self,ExtraTime,15,0.1,-1");
-        DispatchKeyValue(ent, "OnTimerEnd",      "!self,ExtraTime,15,0,-1");
+
+        Format(tmp, sizeof(tmp),                 "!self,ExtraTime,%d,0,-1", GetRespawnTime());
+        DispatchKeyValue(ent, "OnTimerEnd",      tmp);
         DispatchKeyValue(ent, "OnTimerEnd",      "!self,InputRespawnPlayers,-2,0,-1");
 
         DispatchKeyValue(ent, "OnRoundTimeEnd",  "!self,InputVigVictory,,0,-1");
@@ -591,6 +598,16 @@ stock JoinHumanTeam(client)
 stock JoinZombieTeam(client)
 {
     ChangeClientTeam(client, ZOMBIE_TEAM);
+}
+
+stock GetRoundTime()
+{
+    return GetConVarInt(g_Cvar_RoundTime);
+}
+
+stock GetRespawnTime()
+{
+    return GetConVarInt(g_Cvar_RespawnTime);
 }
 
 stock bool:GetRandomValueFromTable(Handle:table, total_weight, String:value[], length)
