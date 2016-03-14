@@ -261,24 +261,13 @@ public Action:Timer_PlayerSpawnDelay(Handle:timer, any:userid)
     if(IsHuman(client))
     {
         //If a player spawns as human give them their primary and secondary gear
-        new String:weapon[MAX_KEY_LENGTH];
-
-        GetRandomValueFromTable(g_GearSecondaryTable, g_GearSecondaryTotalWeight, weapon, sizeof(weapon));
-        ForceEquipWeapon(client, weapon, true);
-
-        GetRandomValueFromTable(g_GearPrimaryTable, g_GearPrimaryTotalWeight, weapon, sizeof(weapon));
-        ForceEquipWeapon(client, weapon);
-
-        //Force client model
-        //SetClientModelIndex(client, g_Model_Vigilante);
-        RandomizeModel(client);
+        GiveInitialGear(client);
 
         PrintCenterText(client, "Survive the zombie plague!"); 
     } else if(IsZombie(client))
     {
         //Force client model
         SetClientModelIndex(client, g_Model_Skeleton);
-        //SetClientModelIndex(client, g_Model_Train);
 
         PrintCenterText(client, "Ughhhh..... BRAINNNSSSS"); 
     }
@@ -603,34 +592,34 @@ stock JoinZombieTeam(client)
 
 stock RandomizeTeams()
 {
-  decl clients[MAXPLAYERS];
-  new client_count = 0, human_count;
-  new Float:ratio = GetConVarFloat(g_Cvar_Ratio);
+    decl clients[MAXPLAYERS];
+    new client_count = 0, human_count;
+    new Float:ratio = GetConVarFloat(g_Cvar_Ratio);
 
-  for(new client = 1; client <= MaxClients; client++)
-  {
-      if(!IsClientInGame(client)) continue;
-      if(!( IsZombie(client) || IsHuman(client) )) continue;
+    for(new client = 1; client <= MaxClients; client++)
+    {
+        if(!IsClientInGame(client)) continue;
+        if(!( IsZombie(client) || IsHuman(client) )) continue;
 
-      client_count++;
-      clients[client_count] = client;
-  }
+        client_count++;
+        clients[client_count] = client;
+    }
 
-  SortIntegers(clients, client_count, Sort_Random);
+    SortIntegers(clients, client_count, Sort_Random);
 
-  //Calculate number of humans;  need at least one
-  human_count = RoundToFloor(client_count * ratio);
-  if(human_count == 0 && client_count > 0) human_count = 1;
+    //Calculate number of humans;  need at least one
+    human_count = RoundToFloor(client_count * ratio);
+    if(human_count == 0 && client_count > 0) human_count = 1;
 
-  //Assign teams
-  for(new i = 0; i < human_count; i++)
-  {
-      JoinHumanTeam(clients[i]);
-  }
-  for(new i = human_count; i < client_count; i++)
-  {
-      JoinZombieTeam(clients[i]);
-  }
+    //Assign teams
+    for(new i = 0; i < human_count; i++)
+    {
+        JoinHumanTeam(clients[i]);
+    }
+    for(new i = human_count; i < client_count; i++)
+    {
+        JoinZombieTeam(clients[i]);
+    }
 }
 
 stock GetRoundTime()
@@ -668,14 +657,24 @@ stock bool:GetRandomValueFromTable(Handle:table, total_weight, String:value[], l
     return false;
 }
 
-stock ForceEquipWeapon(client, const String:weapon[], bool second=false)
+stock GiveInitialGear(client)
+{
+    new String:weapon[MAX_KEY_LENGTH];
+
+    GetRandomValueFromTable(g_GearSecondaryTable, g_GearSecondaryTotalWeight, weapon, sizeof(weapon));
+    GivePlayerItem(client, weapon);
+    PrintToChat(client, "Given %s", weapon);
+    //UseWeapon(client, weapon, true);
+
+    GetRandomValueFromTable(g_GearPrimaryTable, g_GearPrimaryTotalWeight, weapon, sizeof(weapon));
+    GivePlayerItem(client, weapon);
+    PrintToChat(client, "Given %s", weapon);
+    UseWeapon(client, weapon);
+}
+
+stock UseWeapon(client, const String:weapon[], bool second=false)
 {
     new String:tmp[MAX_KEY_LENGTH];
-
-    GivePlayerItem(client, weapon);
-
-    PrintToChat(client, "Given %s", weapon);
-
     Format(tmp, sizeof(tmp), "use %s%s", weapon, second ? "2" : "");
     ClientCommand(client, tmp);
 }
