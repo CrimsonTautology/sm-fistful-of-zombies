@@ -17,7 +17,7 @@
 #undef REQUIRE_EXTENSIONS
 #tryinclude <steamworks>
 
-#define PLUGIN_VERSION		"1.0.0"
+#define PLUGIN_VERSION		"1.0.1"
 #define PLUGIN_NAME         "[FoF] Fistful Of Zombies"
 #define DEBUG				false
 
@@ -52,12 +52,15 @@ new g_LootTotalWeight;
 
 new g_Teamplay = INVALID_ENT_REFERENCE;
 
+new g_RoundStart = 0;
+
 new g_Model_Vigilante;
 new g_Model_Desperado;
 new g_Model_Bandido;
 new g_Model_Ranger;
 new g_Model_Ghost;
 new g_Model_Skeleton;
+new g_Model_Train;
 
 
 public Plugin:myinfo =
@@ -100,6 +103,8 @@ public OnPluginStart()
     HookEvent("player_spawn", Event_PlayerSpawn);
     HookEvent("player_death", Event_PlayerDeath);
     HookEvent("round_start", Event_RoundStart);
+    HookEvent("round_end", Event_RoundEnd);
+    HookEvent("player_team", Event_PlayerTeam, EventHookMode_Pre);
 
     RegAdminCmd("sm_zombie", Command_Zombie, ADMFLAG_ROOT, "TEST command");//TODO
 
@@ -149,10 +154,15 @@ public OnMapStart()
     g_Model_Ranger = PrecacheModel("models/playermodels/frank.mdl");
     g_Model_Ghost = PrecacheModel("models/npc/ghost.mdl");
     g_Model_Skeleton = PrecacheModel("models/skeleton.mdl");
+    g_Model_Train = PrecacheModel("models/props/forest/train.mdl");
 
     ConvertSpawns();
     ConvertWhiskey(g_LootTable, g_LootTotalWeight);
     g_Teamplay = SpawnZombieTeamplay();
+
+    g_RoundStart = GetTime();
+
+    CreateTimer(1.0, Timer_Repeat, .flags = TIMER_REPEAT|TIMER_FLAG_NO_MAPCHANGE);
 }
 
 public OnConfigsExecuted()
@@ -193,8 +203,39 @@ public Event_RoundStart(Event:event, const String:name[], bool:dontBroadcast)
 {
     if(!IsEnabled()) return;
 
+    g_RoundStart = GetTime();
+
     ConvertWhiskey(g_LootTable, g_LootTotalWeight);
     RemoveCrates();
+}
+
+
+public Event_RoundEnd(Event:event, const String:name[], bool:dontBroadcast)
+{
+    if(!IsEnabled()) return;
+
+    g_RoundStart = GetTime();
+}
+
+public Action:Event_PlayerTeam(Event:event, const String:name[], bool:dontBroadcast)
+{
+    if(!IsEnabled()) return Plugin_Continue;
+
+    new userid = GetEventInt(event, "userid");
+    new client = GetClientOfUserId(userid);
+    new team   = GetEventInt(event, "team");
+    new oldteam   = GetEventInt(event, "oldteam");
+
+    //If A player joins in late as a human force them to be a zombie
+    if(team == HUMAN_TEAM && GetTime() - g_RoundStart > 15)
+    {
+        PrintToServer("-------------blocked %L from joining %d (was %d)", client, team, oldteam);
+        CreateTimer(0.1, Timer_HumanDeathDelay, userid, TIMER_FLAG_NO_MAPCHANGE);
+        return Plugin_Handled;
+    }
+
+    return Plugin_Continue;
+
 }
 
 public Action:Timer_PlayerSpawnDelay(Handle:timer, any:userid)
@@ -206,9 +247,9 @@ public Action:Timer_PlayerSpawnDelay(Handle:timer, any:userid)
     if(!IsClientInGame(client)) return Plugin_Handled;
     if(!IsPlayerAlive(client)) return Plugin_Handled;
 
-    //If a player spawns as human give them their primary and secondary gear
     if(IsHuman(client))
     {
+        //If a player spawns as human give them their primary and secondary gear
         new String:weapon[MAX_KEY_LENGTH];
 
         GetRandomValueFromTable(g_GearSecondaryTable, g_GearSecondaryTotalWeight, weapon, sizeof(weapon));
@@ -220,10 +261,15 @@ public Action:Timer_PlayerSpawnDelay(Handle:timer, any:userid)
         //Force client model
         //SetClientModelIndex(client, g_Model_Vigilante);
         RandomizeModel(client);
+
+        PrintCenterText(client, "Survive the zombie plague!"); 
     } else if(IsZombie(client))
     {
         //Force client model
         SetClientModelIndex(client, g_Model_Skeleton);
+        //SetClientModelIndex(client, g_Model_Train);
+
+        PrintCenterText(client, "Ughhhh..... BRAINNNSSSS"); 
     }
 
     return Plugin_Handled;
@@ -238,6 +284,26 @@ public Action:Timer_HumanDeathDelay(Handle:timer, any:userid)
     if(!IsClientInGame(client)) return Plugin_Handled;
 
     BecomeZombie(client);
+    SetClientModelIndex(client, g_Model_Skeleton);
+    //SetClientModelIndex(client, g_Model_Train);
+
+    return Plugin_Handled;
+}
+
+public Action:Timer_Repeat(Handle:timer)
+{
+    if(!IsEnabled()) return Plugin_Continue;
+
+    for (new client=1; client <= MaxClients; client++)
+    {
+        if(!IsClientInGame(client)) continue;
+        if(!IsPlayerAlive(client)) continue;
+
+        if(IsZombie(client))
+        {
+            StripWeapons(client);
+        }
+    }
 
     return Plugin_Handled;
 }
@@ -289,7 +355,8 @@ public Action:Command_Zombie(client, args)
     }
 
     //PrintToChat(client, "team = %d", GetClientTeam(client));
-    AcceptEntityInput(g_Teamplay, "InputVigVictory");
+    new Float:speed = GetEntPropFloat(client, Prop_Data, "m_flMaxspeed");
+    PrintToChat(client, "speed = %f", speed);
 
     return Plugin_Handled;
 }
@@ -370,6 +437,19 @@ RemoveCrates()
 {
     new ent = INVALID_ENT_REFERENCE;
     while((ent = FindEntityByClassname(ent, "fof_crate*")) != INVALID_ENT_REFERENCE)
+    {
+        AcceptEntityInput(ent, "Kill" );
+    }
+}
+
+RemoveWeapons()
+{
+    new ent = INVALID_ENT_REFERENCE;
+    while((ent = FindEntityByClassname(ent, "weapon*")) != INVALID_ENT_REFERENCE)
+    {
+        AcceptEntityInput(ent, "Kill" );
+    }
+    while((ent = FindEntityByClassname(ent, "dynamite*")) != INVALID_ENT_REFERENCE)
     {
         AcceptEntityInput(ent, "Kill" );
     }
@@ -458,9 +538,9 @@ SpawnZombieTeamplay()
         DispatchKeyValue(ent, "SwitchTeams", "1");
 
         //Todo, cvar ExtraTime and RoundTime
-        DispatchKeyValue(ent, "OnNewRound",      "!self,RoundTime,420,0,-1");
-        DispatchKeyValue(ent, "OnNewRound",      "!self,ExtraTime,10,0.1,-1");
-        DispatchKeyValue(ent, "OnTimerEnd",      "!self,ExtraTime,10,0,-1");
+        DispatchKeyValue(ent, "OnNewRound",      "!self,RoundTime,180,0,-1");
+        DispatchKeyValue(ent, "OnNewRound",      "!self,ExtraTime,15,0.1,-1");
+        DispatchKeyValue(ent, "OnTimerEnd",      "!self,ExtraTime,15,0,-1");
         DispatchKeyValue(ent, "OnTimerEnd",      "!self,InputRespawnPlayers,-2,0,-1");
 
         DispatchKeyValue(ent, "OnRoundTimeEnd",  "!self,InputVigVictory,,0,-1");
@@ -535,6 +615,8 @@ stock ForceEquipWeapon(client, const String:weapon[], bool second=false)
 
     GivePlayerItem(client, weapon);
 
+    PrintToChat(client, "Given %s", weapon);
+
     Format(tmp, sizeof(tmp), "use %s%s", weapon, second ? "2" : "");
     ClientCommand(client, tmp);
 }
@@ -563,6 +645,26 @@ stock RandomizeModel(client)
             case 1: { SetClientModelIndex(client, g_Model_Skeleton); }
         }
     }
+}
+
+StripWeapons(client)
+{
+    new weapon_ent;
+    decl String:class_name[MAX_KEY_LENGTH];
+    new offs = FindSendPropInfo("CBasePlayer","m_hMyWeapons");
+
+    for(new i = 0; i <= 47; i++)
+    {
+        weapon_ent = GetEntDataEnt2(client,offs + (i * 4));
+        if(weapon_ent == -1) continue;
+
+        GetEdictClassname(weapon_ent, class_name, sizeof(class_name));
+        if(StrEqual(class_name, "weapon_fists")) continue;
+
+        RemovePlayerItem(client, weapon_ent);
+        RemoveEdict(weapon_ent);
+    }
+
 }
 
 stock bool SetClientModelIndex(client, index)

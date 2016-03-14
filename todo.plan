@@ -1,0 +1,48 @@
+- Manage cvars
+    - zombie respawn wave time
+    - round time
+    - infection chance
+    - infection time
+    - zombie team ratio
+
+- Auto-balance
+    - is completely random right now
+    - add cvar to determine human to zombie ratio
+        - shuffle list of players and then round robin with ratio
+
+- Balance
+    - infection
+        - when a zombie strikes a human there is a small chance the human is infected
+        - an infected human will progressivley get more drunk until they turn into a zombie
+        - timer to increase drunkness;  audio ques that play more frequently
+        - handle in place team switch
+        - infection chance should reflect how many humans vs zombies more common with many humans;  never on last human
+    - whiskey bottles
+        - infinite healing is unbalanced
+        - some type of "ammo" for whiskey
+    - dynamite
+        - damage reduction for humans?
+        - maybe increase duration/ammount of flames + increase zombie flame damage
+        - would also apply to rpg
+    - zombie abilities
+        - allow zombies to leap?  move faster?
+        - maybe throw dynamite?
+            - prevent holding fuse to suicide bomb
+            - prevent holding fuse when thrown;  after thrown force max fuse duration
+                - idea is to scare humans from camping in one area for too long.  Dynamite would force them to evacuate but not instantly kill them
+
+- Zombie Classes
+    - perks
+        - all classes have a perk meter that starts at zero and will fill up as they are alive.  once it fills up they can use their perk with right mouse button
+        - perk fill speed should increase the fewer zombies there are?
+    - hunter
+        - should be most common
+        - leap perk;  Send player flying in direction they are looking
+    - spitter
+        - green color
+        - spit perk; once full will throw 3 green dynamite in direction they are looking.  Green dynamite does ~25 damage to survivors but will with increased knockback
+        - on death will drop a green dyamite
+    - charger
+        - black color
+        - has brass knuckles;  punch players knocks away their weapons; maybe increase knockback
+        - slower but more health

@@ -65,7 +65,7 @@ desc "Reload sourcemod on development server"
 task :reload do
   rcon_session do |server|
     puts server.rcon_exec('say [SRCDS] Reloading sourcemod')
-    puts server.rcon_exec('sm plugins unload zombie_fof')
+    puts server.rcon_exec('sm plugins unload fistful_of_zombies')
     puts server.rcon_exec('sm plugins load zombie_fof')
     puts server.rcon_exec('say [SRCDS] Reload completed')
   end
