@@ -68,11 +68,11 @@ new bool:g_Infected[MAXPLAYERS+1] = false;
 
 public Plugin:myinfo =
 {
-	name = PLUGIN_NAME,
-	author = "CrimsonTautology",
-	description = "Zombie Survival for Fistful of Frags",
-	version = PLUGIN_VERSION,
-	url = "https://github.com/CrimsonTautology/sm_fistful_of_zombies"
+    name = PLUGIN_NAME,
+    author = "CrimsonTautology",
+    description = "Zombie Survival for Fistful of Frags",
+    version = PLUGIN_VERSION,
+    url = "https://github.com/CrimsonTautology/sm_fistful_of_zombies"
 };
 
 public OnPluginStart()
@@ -150,10 +150,10 @@ public OnMapStart()
     decl String:file[PLATFORM_MAX_PATH];
     GetConVarString(g_Cvar_Config, file, sizeof(file));
     LoadFOZFile(file,
-        g_GearPrimaryTable, g_GearPrimaryTotalWeight,
-        g_GearSecondaryTable, g_GearSecondaryTotalWeight,
-        g_LootTable, g_LootTotalWeight
-        );
+            g_GearPrimaryTable, g_GearPrimaryTotalWeight,
+            g_GearSecondaryTable, g_GearSecondaryTotalWeight,
+            g_LootTable, g_LootTotalWeight
+            );
 
     //Cache materials
     PrecacheSound(SOUND_ROUNDSTART, true);
@@ -306,9 +306,7 @@ public Action:Timer_Repeat(Handle:timer)
 
         if(IsHuman(client))
         {
-            new Float:drunkness = GetEntPropFloat(client, Prop_Send, "m_flDrunkness");
-
-            if(drunkness > INFECTION_LIMIT) 
+            //No-op
 
         }else if(IsZombie(client))
         {
