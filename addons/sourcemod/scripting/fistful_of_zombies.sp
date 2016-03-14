@@ -126,8 +126,6 @@ public OnPluginStart()
     g_Cvar_TeamsUnbalanceLimit = FindConVar("mp_teams_unbalance_limit");
     g_Cvar_Autoteambalance = FindConVar("mp_autoteambalance");
 
-    SetDefaultConVars();
-
     AutoExecConfig();
 }
 
@@ -166,6 +164,7 @@ public OnMapStart()
     g_Model_Skeleton = PrecacheModel("models/skeleton.mdl");
     g_Model_Train = PrecacheModel("models/props/forest/train.mdl");
 
+    //Initial setup
     ConvertSpawns();
     ConvertWhiskey(g_LootTable, g_LootTotalWeight);
     g_Teamplay = SpawnZombieTeamplay();
@@ -173,6 +172,7 @@ public OnMapStart()
     g_RoundStart = GetTime();
 
     CreateTimer(1.0, Timer_Repeat, .flags = TIMER_REPEAT|TIMER_FLAG_NO_MAPCHANGE);
+
 }
 
 public OnConfigsExecuted()
@@ -180,6 +180,7 @@ public OnConfigsExecuted()
     if(!IsEnabled()) return;
 
     SetGameDescription(GAME_DESCRIPTION);
+    SetDefaultConVars();
 }
 
 public Event_PlayerActivate(Handle:event, const String:name[], bool:dontBroadcast)
@@ -428,9 +429,9 @@ BuildWeightTable(Handle:kv, const String:name[], &Handle:table, &total_weight)
 
 SetDefaultConVars()
 {
-    SetConVarBool(g_Cvar_TeambalanceAllowed, false, false, false);
-    SetConVarInt(g_Cvar_TeamsUnbalanceLimit, 30, false, false);
-    SetConVarBool(g_Cvar_Autoteambalance, false, false, false);
+    SetConVarInt(g_Cvar_TeambalanceAllowed, 0, false, false);
+    SetConVarInt(g_Cvar_TeamsUnbalanceLimit, 0, false, false);
+    SetConVarInt(g_Cvar_Autoteambalance, 0, false, false);
 }
 
 RemoveCrates()
