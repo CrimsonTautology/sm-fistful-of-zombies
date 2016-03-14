@@ -108,7 +108,7 @@ public OnPluginStart()
 
     g_Cvar_Ratio = CreateConVar(
             "foz_ratio",
-            "0.75",
+            "0.65",
             "Percentage of players that start as human.",
             FCVAR_PLUGIN,
             true, 0.01,
@@ -221,7 +221,7 @@ public Event_PlayerDeath(Handle:event, const String:name[], bool:dontBroadcast)
     if(IsHuman(client))
     {
         //Announce the death
-        PrintCenterTextAll("Survivor %N has turned...", client);
+        PrintCenterTextAll("%N has turned...", client);
         EmitSoundToAll(SOUND_STINGER, .flags = SND_CHANGEPITCH, .pitch = 80);
 
         CreateTimer(1.0, Timer_HumanDeathDelay, userid, TIMER_FLAG_NO_MAPCHANGE);
@@ -381,15 +381,16 @@ public Action:SoundCallback(clients[64], &numClients, String:sample[PLATFORM_MAX
     //---Hit SoundCallBack(player/voice2/fistfight_putemup.wav) by 1: channel(0) volume(1.000000) level(95) pitch(97) flags(0)
 
 
-    if (entity > 0 && entity <= MaxClients && channel == 0)
+    if (entity > 0 && entity <= MaxClients)
     {
         //Change the voice of zombie players
         if(IsZombie(entity))
         {
+            if(StrContains(sample, "player/voice") == 0 || StrContains(sample, "npc/mexican") == 0)
             //PrintToServer("---Change Voice(%s) by %L: channel(%d) volume(%f) level(%d) pitch(%d) flags(%d)", sample, entity, channel, volume, level, pitch, flags);
             //TODO change voice file?
             //Next expression is ((175/(1+6x))+75) so results stay between 75 and 250 with 100 pitch at normal size.
-            pitch = RoundToNearest(50.0);
+            pitch = 40;
             flags |= SND_CHANGEPITCH;
             return Plugin_Changed;
         }
