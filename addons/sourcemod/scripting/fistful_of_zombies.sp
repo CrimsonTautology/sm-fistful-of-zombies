@@ -35,8 +35,8 @@
 #define SOUND_STINGER       "music/kill1.wav"
 #define SOUND_NOPE          "player/voice/no_no1.wav"
 
-#define ZOMBIE_TEAM         3   //Desperados
-#define HUMAN_TEAM          2   //Vigilantes
+#define TEAM_ZOMBIE         TEAM_THREE   //Desperados
+#define TEAM_HUMAN          TEAM_TWO   //Vigilantes
 
 new Handle:g_Cvar_Enabled = INVALID_HANDLE;
 new Handle:g_Cvar_Config = INVALID_HANDLE;
@@ -182,6 +182,8 @@ public OnMapStart()
     ConvertSpawns();
     ConvertWhiskey(g_LootTable, g_LootTotalWeight);
     g_Teamplay = SpawnZombieTeamplay();
+    Team_SetName(TEAM_ZOMBIE, "Zombies");
+    Team_SetName(TEAM_HUMAN, "Humans");
 
     g_RoundStart = GetTime();
 
@@ -258,7 +260,7 @@ public Action:Event_PlayerTeam(Event:event, const String:name[], bool:dontBroadc
     new oldteam   = GetEventInt(event, "oldteam");
 
     //If A player joins in late as a human force them to be a zombie
-    if(team == HUMAN_TEAM && GetTime() - g_RoundStart > 15)
+    if(team == TEAM_HUMAN && GetTime() - g_RoundStart > 15)
     {
         PrintToServer("-------------blocked %L from joining %d (was %d)", client, team, oldteam);
         CreateTimer(0.1, Timer_HumanDeathDelay, userid, TIMER_FLAG_NO_MAPCHANGE);
@@ -407,9 +409,11 @@ public Action:Command_Zombie(client, args)
         return Plugin_Handled;
     }
 
-    //PrintToChat(client, "team = %d", GetClientTeam(client));
-    new Float:speed = GetEntPropFloat(client, Prop_Data, "m_flMaxspeed");
-    PrintToChat(client, "speed = %f", speed);
+    new String:tmp[512];
+    Team_GetName(TEAM_ZOMBIE, tmp, sizeof(tmp));
+    PrintToServer("TEAM_ZOMBIE = %s", tmp);
+    Team_GetName(TEAM_HUMAN, tmp, sizeof(tmp));
+    PrintToServer("TEAM_HUMAN  = %s", tmp);
 
     return Plugin_Handled;
 }
@@ -625,22 +629,22 @@ stock bool:IsEnabled()
 
 stock bool:IsHuman(client)
 {
-    return GetClientTeam(client) == HUMAN_TEAM;
+    return GetClientTeam(client) == TEAM_HUMAN;
 }
 
 stock bool:IsZombie(client)
 {
-    return GetClientTeam(client) == ZOMBIE_TEAM;
+    return GetClientTeam(client) == TEAM_ZOMBIE;
 }
 
 stock JoinHumanTeam(client)
 {
-    ChangeClientTeam(client, HUMAN_TEAM);
+    ChangeClientTeam(client, TEAM_HUMAN);
 }
 
 stock JoinZombieTeam(client)
 {
-    ChangeClientTeam(client, ZOMBIE_TEAM);
+    ChangeClientTeam(client, TEAM_ZOMBIE);
 }
 
 stock RandomizeTeams()
