@@ -489,24 +489,16 @@ SetDefaultConVars()
 
 RemoveCrates()
 {
-    new ent = INVALID_ENT_REFERENCE;
-    while((ent = FindEntityByClassname(ent, "fof_crate*")) != INVALID_ENT_REFERENCE)
-    {
-        AcceptEntityInput(ent, "Kill" );
-    }
+    new n = Entity_KillAllByClassName("fof_crate*");
+    PrintToServer("Removed %d crates", n)//TODO
 }
 
 RemoveWeapons()
 {
-    new ent = INVALID_ENT_REFERENCE;
-    while((ent = FindEntityByClassname(ent, "weapon*")) != INVALID_ENT_REFERENCE)
-    {
-        AcceptEntityInput(ent, "Kill" );
-    }
-    while((ent = FindEntityByClassname(ent, "dynamite*")) != INVALID_ENT_REFERENCE)
-    {
-        AcceptEntityInput(ent, "Kill" );
-    }
+    new n = 0;
+    n += Entity_KillAllByClassName("weapon*");
+    n += Entity_KillAllByClassName("dynamite*");
+    PrintToServer("Removed %d weapons", n)//TODO
 }
 
 //Change all info_player_fof spawn points to a round robin
