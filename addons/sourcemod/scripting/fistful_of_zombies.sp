@@ -67,7 +67,7 @@ new g_Model_Bandido;
 new g_Model_Ranger;
 new g_Model_Ghost;
 new g_Model_Skeleton;
-new g_Model_Train;
+new g_Model_FistsGhost;
 
 new bool:g_Infected[MAXPLAYERS+1] = false;
 
@@ -176,7 +176,7 @@ public OnMapStart()
     g_Model_Ranger = PrecacheModel("models/playermodels/frank.mdl");
     g_Model_Ghost = PrecacheModel("models/npc/ghost.mdl");
     g_Model_Skeleton = PrecacheModel("models/skeleton.mdl");
-    g_Model_Train = PrecacheModel("models/props/forest/train.mdl");
+    g_Model_FistsGhost = PrecacheModel("models/weapons/v_fists_ghost.mdl");
 
     //Initial setup
     ConvertSpawns();
