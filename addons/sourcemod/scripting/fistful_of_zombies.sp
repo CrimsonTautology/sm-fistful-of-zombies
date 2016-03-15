@@ -14,6 +14,7 @@
 #include <sourcemod>
 #include <sdktools>
 #include <sdkhooks>
+#include <smlib>
 #undef REQUIRE_EXTENSIONS
 #tryinclude <steamworks>
 
