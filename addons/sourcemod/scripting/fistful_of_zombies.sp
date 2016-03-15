@@ -412,6 +412,8 @@ public Action:Command_Zombie(client, args)
     Team_GetName(TEAM_HUMAN, tmp, sizeof(tmp));
     WriteLog("TEAM_HUMAN  = %s", tmp);
 
+    WeaponDump();
+
     return Plugin_Handled;
 }
 
@@ -792,6 +794,36 @@ stock bool:SetGameDescription(String:description[], bool:override = true)
     if(override) return SteamWorks_SetGameDescription(description);
 #endif
     return false;
+}
+
+stock WeaponDump()
+{
+#if defined DEBUG
+    new String:name[512];
+    new Float:origin[3];
+    new weapon = INVALID_ENT_REFERENCE, st, prit, pric, prin, vm, owner;
+    while ((weapon = FindEntityByClassname(weapon, "weapon*")) != INVALID_ENT_REFERENCE) {
+        Entity_GetClassName(weapon, name, sizeof(name));
+        Entity_GetAbsOrigin(weapon, origin);
+        owner = Weapon_GetOwner(weapon);
+        st = Weapon_GetState(weapon);
+        prit= Weapon_GetPrimaryAmmoType(weapon);
+        pric= Weapon_GetPrimaryClip(weapon);
+        prin= Weapon_GetPrimaryAmmoCount(weapon);
+        vm = Weapon_GetViewModelIndex(weapon);
+        WriteLog("%s(%d) (%f, %f, %f): owner=%d, state=%d, ammo=%d (%d/%d), viewmodel=%d",
+        name,
+        weapon,
+        origin[0], origin[1], origin[2],
+        owner,
+        st,
+        prit,
+        prin,
+        pric,
+        vm
+        );
+    }
+#endif
 }
 
 stock WriteLog(const String:format[], any:... )
