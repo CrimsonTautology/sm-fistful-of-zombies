@@ -20,7 +20,7 @@
 
 #define PLUGIN_VERSION		"1.0.1"
 #define PLUGIN_NAME         "[FoF] Fistful Of Zombies"
-#define DEBUG				false
+#define DEBUG				true
 
 #define MAX_KEY_LENGTH	    128
 #define MAX_TABLE   	    128
@@ -262,7 +262,7 @@ public Action:Event_PlayerTeam(Event:event, const String:name[], bool:dontBroadc
     //If A player joins in late as a human force them to be a zombie
     if(team == TEAM_HUMAN && GetTime() - g_RoundStart > 15)
     {
-        PrintToServer("-------------blocked %L from joining %d (was %d)", client, team, oldteam);
+        WriteLog("-------------blocked %L from joining %d (was %d)", client, team, oldteam);
         CreateTimer(0.1, Timer_HumanDeathDelay, userid, TIMER_FLAG_NO_MAPCHANGE);
 
         return Plugin_Handled;
@@ -374,7 +374,7 @@ public Action:Command_JoinTeam(client, const String:command[], args)
 
 public Action:SoundCallback(clients[64], &numClients, String:sample[PLATFORM_MAX_PATH], &entity, &channel, &Float:volume, &level, &pitch, &flags)
 {
-    //PrintToServer("---Hit SoundCallBack(%s) by %d: channel(%d) volume(%f) level(%d) pitch(%d) flags(%d)", sample, entity, channel, volume, level, pitch, flags);
+    //WriteLog("---Hit SoundCallBack(%s) by %d: channel(%d) volume(%f) level(%d) pitch(%d) flags(%d)", sample, entity, channel, volume, level, pitch, flags);
     //---Hit SoundCallBack(#/music/bounty/bounty_objective_stinger1.mp3) by 1: channel(0) volume(0.599609) level(80) pitch(100) flags(0)
     //---Hit SoundCallBack(player/footsteps/grass3.wav) by 3: channel(4) volume(0.400000) level(70) pitch(100) flags(0)
     //---Hit SoundCallBack(player/voice2/pain/pl_death2.wav) by 3: channel(0) volume(0.602976) level(95) pitch(104) flags(0)
@@ -387,7 +387,7 @@ public Action:SoundCallback(clients[64], &numClients, String:sample[PLATFORM_MAX
         if(IsZombie(entity))
         {
             if(StrContains(sample, "player/voice") == 0 || StrContains(sample, "npc/mexican") == 0)
-            //PrintToServer("---Change Voice(%s) by %L: channel(%d) volume(%f) level(%d) pitch(%d) flags(%d)", sample, entity, channel, volume, level, pitch, flags);
+            //WriteLog("---Change Voice(%s) by %L: channel(%d) volume(%f) level(%d) pitch(%d) flags(%d)", sample, entity, channel, volume, level, pitch, flags);
             //TODO change voice file?
             //Next expression is ((175/(1+6x))+75) so results stay between 75 and 250 with 100 pitch at normal size.
             pitch = 40;
@@ -408,9 +408,9 @@ public Action:Command_Zombie(client, args)
 
     new String:tmp[512];
     Team_GetName(TEAM_ZOMBIE, tmp, sizeof(tmp));
-    PrintToServer("TEAM_ZOMBIE = %s", tmp);
+    WriteLog("TEAM_ZOMBIE = %s", tmp);
     Team_GetName(TEAM_HUMAN, tmp, sizeof(tmp));
-    PrintToServer("TEAM_HUMAN  = %s", tmp);
+    WriteLog("TEAM_HUMAN  = %s", tmp);
 
     return Plugin_Handled;
 }
@@ -467,7 +467,7 @@ BuildWeightTable(Handle:kv, const String:name[], &Handle:table, &total_weight)
             {
                 total_weight += weight;
 
-                PrintToServer( "Add[%s]: %s (%d) (%d)", name, key, weight, total_weight);
+                WriteLog("Add[%s]: %s (%d) (%d)", name, key, weight, total_weight);
             }
         }
         while(KvGotoNextKey(kv));
@@ -490,7 +490,7 @@ SetDefaultConVars()
 RemoveCrates()
 {
     new n = Entity_KillAllByClassName("fof_crate*");
-    PrintToServer("Removed %d crates", n)//TODO
+    WriteLog("Removed %d crates", n);
 }
 
 RemoveWeapons()
@@ -498,7 +498,7 @@ RemoveWeapons()
     new n = 0;
     n += Entity_KillAllByClassName("weapon*");
     n += Entity_KillAllByClassName("dynamite*");
-    PrintToServer("Removed %d weapons", n)//TODO
+    WriteLog("Removed %d weapons", n);
 }
 
 //Change all info_player_fof spawn points to a round robin
@@ -560,7 +560,7 @@ ConvertWhiskey(Handle:loot_table, loot_total_weight)
         converted = Weapon_Create(loot, origin, angles);
         if(converted != INVALID_ENT_REFERENCE)
         {
-            PrintToServer("Whiskey[%d] to %s", count, loot);//TODO
+            WriteLog("Whiskey[%d] to %s", count, loot);//TODO
         }
 
         count++;
@@ -802,7 +802,7 @@ stock WriteLog(const String:format[], any:... )
         decl String:buf[2048];
         VFormat(buf, sizeof(buf), format, 2 );
         //LogToFileEx("log_zombie.txt", "[%.3f] %s", GetGameTime(), buf);
-        PrintToServer("[%.3f] %s", GetGameTime(), buf);
+        PrintToServer("---FoZ: %s", buf);
     }
 #endif
 }
