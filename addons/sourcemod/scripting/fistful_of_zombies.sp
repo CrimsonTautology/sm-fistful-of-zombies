@@ -289,8 +289,8 @@ public Action:Timer_PlayerSpawnDelay(Handle:timer, any:userid)
     } else if(IsZombie(client))
     {
         //Force client model
-        SetClientModelIndex(client, g_Model_Skeleton);
-        SetClientOverlay(client, "debug/yuv");
+        Entity_SetModelIndex(client, g_Model_Skeleton);
+        Client_SetScreenOverlay(client, "debug/yuv");
 
         PrintCenterText(client, "Ughhhh..... BRAINNNSSSS"); 
     }
@@ -306,7 +306,7 @@ public Action:Timer_HumanDeathDelay(Handle:timer, any:userid)
     if(!Client_IsIngame(client)) return Plugin_Handled;
 
     JoinZombieTeam(client);
-    SetClientModelIndex(client, g_Model_Skeleton);
+    Entity_SetModelIndex(client, g_Model_Skeleton);
 
     return Plugin_Handled;
 }
@@ -761,10 +761,10 @@ stock RandomizeModel(client)
         model = GetRandomInt(0, 3);
         switch (model)
         {
-            case 0: { SetClientModelIndex(client, g_Model_Vigilante); }
-            case 1: { SetClientModelIndex(client, g_Model_Desperado); }
-            case 2: { SetClientModelIndex(client, g_Model_Bandido); }
-            case 3: { SetClientModelIndex(client, g_Model_Ranger); }
+            case 0: { Entity_SetModelIndex(client, g_Model_Vigilante); }
+            case 1: { Entity_SetModelIndex(client, g_Model_Desperado); }
+            case 2: { Entity_SetModelIndex(client, g_Model_Bandido); }
+            case 3: { Entity_SetModelIndex(client, g_Model_Ranger); }
         }
 
     } else if(IsZombie(client))
@@ -772,8 +772,8 @@ stock RandomizeModel(client)
         model = GetRandomInt(0, 1);
         switch (model)
         {
-            case 0: { SetClientModelIndex(client, g_Model_Ghost); }
-            case 1: { SetClientModelIndex(client, g_Model_Skeleton); }
+            case 0: { Entity_SetModelIndex(client, g_Model_Ghost); }
+            case 1: { Entity_SetModelIndex(client, g_Model_Skeleton); }
         }
     }
 }
@@ -796,26 +796,6 @@ StripWeapons(client)
         RemoveEdict(weapon_ent);
     }
 
-}
-
-stock bool SetClientModelIndex(client, index)
-{
-    SetEntProp(client, Prop_Data, "m_nModelIndex", index, 2);
-}
-
-stock SetClientOverlay(client, String:strOverlay[])
-{
-    if(!Client_IsIngame(client)) return;
-
-    //Allow cheat command
-    new original = GetCommandFlags("r_screenoverlay");
-    new flags =  original & (~FCVAR_CHEAT);
-    SetCommandFlags("r_screenoverlay", flags);
-
-    ClientCommand(client, "r_screenoverlay \"%s\"", strOverlay);
-
-    //Revert to original
-    SetCommandFlags("r_screenoverlay", original);
 }
 
 stock bool:SetGameDescription(String:description[], bool:override = true)
