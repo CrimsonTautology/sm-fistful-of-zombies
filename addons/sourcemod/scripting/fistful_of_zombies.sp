@@ -123,6 +123,9 @@ public OnPluginStart()
     HookEvent("round_end", Event_RoundEnd);
     HookEvent("player_team", Event_PlayerTeam, EventHookMode_Pre);
 
+    RegConsoleCmd("sm_leap", Command_Leap, "TEST test leap command"); //TODO
+
+
     RegAdminCmd("sm_zombie", Command_Zombie, ADMFLAG_ROOT, "TEST command");//TODO
 
     AddCommandListener(Command_JoinTeam, "jointeam");
@@ -396,6 +399,14 @@ public Action:SoundCallback(clients[64], &numClients, String:sample[PLATFORM_MAX
         }
     }
     return Plugin_Continue;
+}
+
+
+public Action:Command_Leap(client, args)
+{
+    PerformLeap(client);
+
+    return Plugin_Handled;
 }
 
 public Action:Command_Zombie(client, args)
@@ -768,7 +779,7 @@ stock RandomizeModel(client)
     }
 }
 
-StripWeapons(client)
+stock StripWeapons(client)
 {
     new weapon_ent;
     decl String:class_name[MAX_KEY_LENGTH];
@@ -785,7 +796,30 @@ StripWeapons(client)
         RemovePlayerItem(client, weapon_ent);
         RemoveEdict(weapon_ent);
     }
+}
 
+stock bool:PerformLeap(client)
+{
+    if(!Client_IsIngame(client)) return false;
+    if(!IsPlayerAlive(client)) return false;
+
+    new Float:origin[3], Float:angles[3], Float:velocity[3];
+    new Float:init;
+
+    GetClientAbsOrigin(client, origin);
+    GetClientEyeAngles(client, angles);
+
+    init = angles[0];
+    angles[0] = -30.0;
+    GetAngleVectors(angles, velocity, NULL_VECTOR, NULL_VECTOR);
+
+    ScaleVector(velocity, 1000.0);
+    angles[0] = init;
+
+    Entity_SetBaseVelocity(client, velocity);
+    //TeleportEntity(client, ClientAbsOrigin, ClientEyeAngle, Velocity); //Toss 'em
+
+    return true;
 }
 
 stock bool:SetGameDescription(String:description[], bool:override = true)
