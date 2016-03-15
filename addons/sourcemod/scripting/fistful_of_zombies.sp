@@ -277,8 +277,7 @@ public Action:Timer_PlayerSpawnDelay(Handle:timer, any:userid)
     new client = GetClientOfUserId(userid);
 
     if(!IsEnabled()) return Plugin_Handled;
-    if(client <= 0) return Plugin_Handled;
-    if(!IsClientInGame(client)) return Plugin_Handled;
+    if(!Client_IsIngame(client)) return Plugin_Handled;
     if(!IsPlayerAlive(client)) return Plugin_Handled;
 
     if(IsHuman(client))
@@ -304,8 +303,7 @@ public Action:Timer_HumanDeathDelay(Handle:timer, any:userid)
     new client = GetClientOfUserId(userid);
 
     if(!IsEnabled()) return Plugin_Handled;
-    if(client <= 0) return Plugin_Handled;
-    if(!IsClientInGame(client)) return Plugin_Handled;
+    if(!Client_IsIngame(client)) return Plugin_Handled;
 
     JoinZombieTeam(client);
     SetClientModelIndex(client, g_Model_Skeleton);
@@ -360,8 +358,7 @@ public Action:Hook_OnWeaponCanUse(client, weapon)
 public Action:Command_JoinTeam(client, const String:command[], args) 
 { 
     if(!IsEnabled()) return Plugin_Continue;
-    if (!IsClientInGame(client)) return Plugin_Continue; 
-    if (client == 0) return Plugin_Continue; 
+    if(!Client_IsIngame(client)) return Plugin_Continue; 
 
     //Block non-spectators from changing teams
     if (GetClientTeam(client) > 1) 
@@ -808,8 +805,7 @@ stock bool SetClientModelIndex(client, index)
 
 stock SetClientOverlay(client, String:strOverlay[])
 {
-    if(client <= 0) return;
-    if(!IsClientInGame(client)) return;
+    if(!Client_IsIngame(client)) return;
 
     //Allow cheat command
     new original = GetCommandFlags("r_screenoverlay");
