@@ -506,29 +506,29 @@ RemoveWeapons()
 ConvertSpawns()
 {
     new count = 0;
-    new original  = INVALID_ENT_REFERENCE;
+    new spawn  = INVALID_ENT_REFERENCE;
     new converted = INVALID_ENT_REFERENCE;
-    new Float:pos[3], Float:ang[3];
+    new Float:origin[3], Float:angles[3];
 
-    while((original = FindEntityByClassname(original, "info_player_fof")) != INVALID_ENT_REFERENCE)
+    while((spawn = FindEntityByClassname(spawn, "info_player_fof")) != INVALID_ENT_REFERENCE)
     {
         //Get original's position and remove it
-        GetEntPropVector(original, Prop_Send, "m_vecOrigin", pos);
-        GetEntPropVector(original, Prop_Send, "m_angRotation", ang);
-        AcceptEntityInput(original, "Kill" );
+        Entity_GetAbsOrigin(spawn, origin);
+        Entity_GetAbsAngles(spawn, angles);
+        Entity_Kill(spawn);
 
         //Spawn a replacement at the same position
         converted = count % 2 == 0
-            ? CreateEntityByName("info_player_vigilante")
-            : CreateEntityByName("info_player_desperado")
+            ? Entity_Create("info_player_vigilante", spawn)
+            : Entity_Create("info_player_desperado", spawn)
             ;
         if(IsValidEntity(converted))
         {
-            DispatchKeyValueVector(converted, "origin", pos);
-            DispatchKeyValueVector(converted, "angles", ang);
+            Entity_SetAbsOrigin(converted, origin);
+            Entity_SetAbsAngles(converted, angles);
             DispatchKeyValue(converted, "StartDisabled", "0");
             DispatchSpawn(converted);
-            ActivateEntity(converted);
+            //ActivateEntity(converted);
         }
 
         count++;
