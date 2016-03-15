@@ -550,29 +550,25 @@ ConvertWhiskey(Handle:loot_table, loot_total_weight)
 {
     decl String:loot[MAX_KEY_LENGTH];
     new count = 0;
-    new original  = INVALID_ENT_REFERENCE;
+    new whiskey  = INVALID_ENT_REFERENCE;
     new converted = INVALID_ENT_REFERENCE;
-    new Float:pos[3], Float:ang[3];
+    new Float:origin[3], Float:angles[3];
 
-    while((original = FindEntityByClassname(original, "item_whiskey")) != INVALID_ENT_REFERENCE)
+    while((whiskey = FindEntityByClassname(whiskey, "item_whiskey")) != INVALID_ENT_REFERENCE)
     {
         //Get original's position and remove it
-        GetEntPropVector(original, Prop_Send, "m_vecOrigin", pos);
-        GetEntPropVector(original, Prop_Send, "m_angRotation", ang);
-        AcceptEntityInput(original, "Kill" );
+        Entity_GetAbsOrigin(whiskey, origin);
+        Entity_GetAbsAngles(whiskey, angles);
+        Entity_Kill(whiskey);
 
         //Spawn a replacement at the same position
         GetRandomValueFromTable(loot_table, loot_total_weight, loot, sizeof(loot));
         if(StrEqual(loot, "nothing", false)) continue;
 
-        converted = CreateEntityByName(loot);//TODO
-        PrintToServer("Whiskey[%d] to %s", count, loot);//TODO
-        if(IsValidEntity(converted))
+        converted = Weapon_Create(loot, origin, angles);
+        if(converted != INVALID_ENT_REFERENCE)
         {
-            DispatchKeyValueVector(converted, "origin", pos);
-            DispatchKeyValueVector(converted, "angles", ang);
-            DispatchSpawn(converted);
-            ActivateEntity(converted);
+            PrintToServer("Whiskey[%d] to %s", count, loot);//TODO
         }
 
         count++;
