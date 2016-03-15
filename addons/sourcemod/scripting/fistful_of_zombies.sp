@@ -35,8 +35,8 @@
 #define SOUND_STINGER       "music/kill1.wav"
 #define SOUND_NOPE          "player/voice/no_no1.wav"
 
-#define TEAM_ZOMBIE         TEAM_THREE   //Desperados
-#define TEAM_HUMAN          TEAM_TWO   //Vigilantes
+#define TEAM_ZOMBIE         3   //Desperados
+#define TEAM_HUMAN          2   //Vigilantes
 
 new Handle:g_Cvar_Enabled = INVALID_HANDLE;
 new Handle:g_Cvar_Config = INVALID_HANDLE;
@@ -532,8 +532,8 @@ ConvertSpawns()
 
         //Spawn a replacement at the same position
         converted = count % 2 == 0
-            ? Entity_Create("info_player_vigilante", spawn)
-            : Entity_Create("info_player_desperado", spawn)
+            ? Entity_Create("info_player_vigilante")
+            : Entity_Create("info_player_desperado")
             ;
         if(IsValidEntity(converted))
         {
@@ -541,7 +541,7 @@ ConvertSpawns()
             Entity_SetAbsAngles(converted, angles);
             DispatchKeyValue(converted, "StartDisabled", "0");
             DispatchSpawn(converted);
-            //ActivateEntity(converted);
+            ActivateEntity(converted);
         }
 
         count++;
@@ -571,10 +571,9 @@ ConvertWhiskey(Handle:loot_table, loot_total_weight)
         if(StrEqual(loot, "nothing", false)) continue;
 
         converted = Weapon_Create(loot, origin, angles);
-        if(converted != INVALID_ENT_REFERENCE)
-        {
-            WriteLog("Whiskey[%d] to %s", count, loot);//TODO
-        }
+        Entity_AddEFlags(converted, EFL_NO_GAME_PHYSICS_SIMULATION | EFL_DONTBLOCKLOS);
+        
+        WriteLog("Whiskey[%d] to %s", count, loot);//TODO
 
         count++;
     }
@@ -835,26 +834,22 @@ stock WeaponDump()
 #if defined DEBUG
     new String:name[512];
     new Float:origin[3];
-    new weapon = INVALID_ENT_REFERENCE, st, prit, pric, prin, vm, owner;
+    new weapon = INVALID_ENT_REFERENCE, st, prit, pric, prin, vm, owner, kj12, Entity_Flags:eflags;
     while ((weapon = FindEntityByClassname(weapon, "weapon*")) != INVALID_ENT_REFERENCE) {
         Entity_GetClassName(weapon, name, sizeof(name));
         Entity_GetAbsOrigin(weapon, origin);
         owner = Weapon_GetOwner(weapon);
         st = Weapon_GetState(weapon);
-        prit= Weapon_GetPrimaryAmmoType(weapon);
-        pric= Weapon_GetPrimaryClip(weapon);
-        prin= Weapon_GetPrimaryAmmoCount(weapon);
-        vm = Weapon_GetViewModelIndex(weapon);
-        WriteLog("%s(%d) (%f, %f, %f): owner=%d, state=%d, ammo=%d (%d/%d), viewmodel=%d",
+        kj12 = 0;//GetEntPropEnt(weapon, Prop_Send, "m_fofKJ2");
+        eflags = Entity_GetEFlags(weapon);
+        WriteLog("%s(%d) (%f, %f, %f): owner=%d, state=%d, KJ2=%d, eflags=%d",
         name,
         weapon,
         origin[0], origin[1], origin[2],
         owner,
         st,
-        prit,
-        prin,
-        pric,
-        vm
+        kj12,
+        eflags
         );
     }
 #endif
