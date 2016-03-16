@@ -842,7 +842,8 @@ stock RoundEndCheck()
     //Check if any Humans are alive and if not force zombies to win
     //NOTE:  The fof_teamplay entity should be handling this but there are some
     //cases where it does not work.
-    if(Team_GetClientCount(TEAM_HUMAN, CLIENTFILTER_ALIVE) <= 0)
+    if(Team_GetClientCount(TEAM_HUMAN, CLIENTFILTER_ALIVE) <= 0
+        && GetRoundState() == RoundActive)
     {
         AcceptEntityInput(g_Teamplay, "InputDespVictory");
     }
