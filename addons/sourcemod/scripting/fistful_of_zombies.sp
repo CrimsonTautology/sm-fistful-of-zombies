@@ -138,7 +138,7 @@ public OnPluginStart()
     g_Cvar_TeamsUnbalanceLimit = FindConVar("mp_teams_unbalance_limit");
     g_Cvar_Autoteambalance = FindConVar("mp_autoteambalance");
 
-    AutoExecConfig();
+    //AutoExecConfig();
 
     AddNormalSoundHook(SoundCallback);
 }
