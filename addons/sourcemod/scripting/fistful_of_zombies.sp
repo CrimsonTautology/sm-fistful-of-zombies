@@ -724,16 +724,6 @@ stock RandomizeTeams()
     }
 }
 
-stock GetRoundTime()
-{
-    return GetConVarInt(g_Cvar_RoundTime);
-}
-
-stock GetRespawnTime()
-{
-    return GetConVarInt(g_Cvar_RespawnTime);
-}
-
 stock bool:GetRandomValueFromTable(Handle:table, total_weight, String:value[], length)
 {
     new weight;
@@ -781,6 +771,25 @@ stock UseWeapon(client, const String:weapon[], bool second=false)
     ClientCommand(client, tmp);
 }
 
+stock StripWeapons(client)
+{
+    new weapon_ent;
+    decl String:class_name[MAX_KEY_LENGTH];
+    new offs = FindSendPropInfo("CBasePlayer","m_hMyWeapons");
+
+    for(new i = 0; i <= 47; i++)
+    {
+        weapon_ent = GetEntDataEnt2(client,offs + (i * 4));
+        if(weapon_ent == -1) continue;
+
+        GetEdictClassname(weapon_ent, class_name, sizeof(class_name));
+        if(StrEqual(class_name, "weapon_fists")) continue;
+
+        RemovePlayerItem(client, weapon_ent);
+        RemoveEdict(weapon_ent);
+    }
+}
+
 stock RandomizeModel(client)
 {
     new model;
@@ -807,23 +816,14 @@ stock RandomizeModel(client)
     }
 }
 
-stock StripWeapons(client)
+stock GetRoundTime()
 {
-    new weapon_ent;
-    decl String:class_name[MAX_KEY_LENGTH];
-    new offs = FindSendPropInfo("CBasePlayer","m_hMyWeapons");
+    return GetConVarInt(g_Cvar_RoundTime);
+}
 
-    for(new i = 0; i <= 47; i++)
-    {
-        weapon_ent = GetEntDataEnt2(client,offs + (i * 4));
-        if(weapon_ent == -1) continue;
-
-        GetEdictClassname(weapon_ent, class_name, sizeof(class_name));
-        if(StrEqual(class_name, "weapon_fists")) continue;
-
-        RemovePlayerItem(client, weapon_ent);
-        RemoveEdict(weapon_ent);
-    }
+stock GetRespawnTime()
+{
+    return GetConVarInt(g_Cvar_RespawnTime);
 }
 
 stock SetRoundState(FoZRoundState:round_state)
