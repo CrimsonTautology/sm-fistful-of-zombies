@@ -235,6 +235,10 @@ public Event_PlayerSpawn(Handle:event, const String:name[], bool:dontBroadcast)
     if(!IsEnabled()) return;
 
     new userid = GetEventInt(event, "userid");
+    new client = GetClientOfUserId(userid);
+
+    ResetLeapMeter(client);
+
     CreateTimer(0.1, Timer_PlayerSpawnDelay, userid, TIMER_FLAG_NO_MAPCHANGE);
 }
 
@@ -315,9 +319,8 @@ public Action:Timer_PlayerSpawnDelay(Handle:timer, any:userid)
     } else if(IsZombie(client))
     {
         //Force client model
-        ResetLeapMeter(client);
         Entity_SetModelIndex(client, g_Model_Skeleton);
-        //Client_SetScreenOverlay(client, "debug/yuv");
+        StripWeapons(client);
 
         PrintCenterText(client, "Ughhhh..... BRAINNNSSSS"); 
     }
@@ -357,7 +360,6 @@ public Action:Timer_Repeat(Handle:timer)
             if(IsPlayerAlive(client))
             {
                 IncrementLeapMeter(client);
-                StripWeapons(client);
             }
         }
 
