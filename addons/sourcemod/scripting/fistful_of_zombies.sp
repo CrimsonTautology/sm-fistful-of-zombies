@@ -56,7 +56,6 @@ new g_LootTotalWeight;
 
 new g_Teamplay = INVALID_ENT_REFERENCE;
 
-new g_RoundStart = 0;
 
 new g_Model_Vigilante;
 new g_Model_Desperado;
@@ -65,6 +64,16 @@ new g_Model_Ranger;
 new g_Model_Ghost;
 new g_Model_Skeleton;
 new g_Model_FistsGhost;
+
+
+enum FoZRoundState
+{
+  RoundPre,
+  RoundGrace,
+  RoundActive,
+  RoundEnd
+}
+new FoZRoundState:g_RoundState = RoundPre;
 
 public Plugin:myinfo =
 {
@@ -119,6 +128,7 @@ public OnPluginStart()
     HookEvent("player_team", Event_PlayerTeam, EventHookMode_Pre);
 
     RegAdminCmd("sm_zombie", Command_Zombie, ADMFLAG_ROOT, "TEST command");//TODO
+    RegAdminCmd("foz_dump", Command_Dump, ADMFLAG_ROOT, "TEST command");//TODO
 
     AddCommandListener(Command_JoinTeam, "jointeam");
     //AddCommandListener(Command_JoinTeam, "equipmenu");
@@ -178,7 +188,8 @@ public OnMapStart()
     Team_SetName(TEAM_ZOMBIE, "Zombies");
     Team_SetName(TEAM_HUMAN, "Humans");
 
-    g_RoundStart = GetTime();
+    WriteLog("Hit MapStart");
+    SetRoundState(RoundPre);
 
     CreateTimer(1.0, Timer_Repeat, .flags = TIMER_REPEAT|TIMER_FLAG_NO_MAPCHANGE);
 
@@ -230,7 +241,9 @@ public Event_RoundStart(Event:event, const String:name[], bool:dontBroadcast)
 {
     if(!IsEnabled()) return;
 
-    g_RoundStart = GetTime();
+    WriteLog("Hit RoundStart");
+    SetRoundState(RoundGrace);
+    CreateTimer(10.0, Timer_EndGrace, TIMER_FLAG_NO_MAPCHANGE);  
 
     ConvertWhiskey(g_LootTable, g_LootTotalWeight);
     RemoveCrates();
@@ -242,7 +255,8 @@ public Event_RoundEnd(Event:event, const String:name[], bool:dontBroadcast)
 {
     if(!IsEnabled()) return;
 
-    g_RoundStart = GetTime();
+    WriteLog("Hit RoundEnd");
+    SetRoundState(RoundEnd);
 }
 
 public Action:Event_PlayerTeam(Event:event, const String:name[], bool:dontBroadcast)
@@ -255,7 +269,7 @@ public Action:Event_PlayerTeam(Event:event, const String:name[], bool:dontBroadc
     new oldteam   = GetEventInt(event, "oldteam");
 
     //If A player joins in late as a human force them to be a zombie
-    if(team == TEAM_HUMAN && !InGrace())
+    if(team == TEAM_HUMAN && GetRoundState() == RoundActive)
     {
         WriteLog("-------------blocked %L from joining %d (was %d)", client, team, oldteam);
         //CreateTimer(0.1, Timer_HumanDeathDelay, userid, TIMER_FLAG_NO_MAPCHANGE);
@@ -305,15 +319,23 @@ public Action:Timer_HumanDeathDelay(Handle:timer, any:userid)
     return Plugin_Handled;
 }
 
+public Action:Timer_EndGrace(Handle:timer)
+{
+    WriteLog("Hit EndGrace");
+    SetRoundState(RoundActive);
+}
+
 public Action:Timer_Repeat(Handle:timer)
 {
     if(!IsEnabled()) return Plugin_Continue;
 
+    RoundEndCheck();
+
     for (new client=1; client <= MaxClients; client++)
     {
         if(!IsClientInGame(client)) continue;
-        
-        
+
+
         if(IsHuman(client))
         {
             //No-op
@@ -379,16 +401,16 @@ public Action:Command_JoinTeam(client, const String:command[], args)
 
     WriteLog("Hit JoinTeam (%N -> %s)", client, cmd);
 
-    if(!InGrace())
+    if(GetRoundState() == RoundActive)
     {
         //If attempting to join human team or random then join zombie team
-        if(StrEqual(cmd, "Desperados", false) || StrEqual(cmd, "auto", false))
+        if(StrEqual(cmd, "3", false) || StrEqual(cmd, "auto", false))
         {
             JoinZombieTeam(client);
             return Plugin_Handled;
         }
         //If attempting to join zombie team or spectator, let them
-        else if(StrEqual(cmd, "Vigilantes", false) || StrEqual(cmd, "spectate", false))
+        else if(StrEqual(cmd, "2", false) || StrEqual(cmd, "spectate", false))
         {
             return Plugin_Continue;
         }
@@ -435,6 +457,30 @@ public Action:Command_Zombie(client, args)
     Team_GetName(TEAM_HUMAN, tmp, sizeof(tmp));
     WriteLog("TEAM_HUMAN  = %s", tmp);
 
+    return Plugin_Handled;
+}
+
+public Action:Command_Dump(caller, args)
+{
+    new String:tmp[32], team;
+    PrintToConsole(caller, "---------------------------------");
+    PrintToConsole(caller, "RoundState: %d", g_RoundState);
+    PrintToConsole(caller, "---------------------------------");
+    PrintToConsole(caller, "team          user");
+    for (new client=1; client <= MaxClients; client++)
+    {
+        if(!IsClientInGame(client) || IsFakeClient(client))
+            continue;
+
+        team = GetClientTeam(client);
+        Team_GetName(team, tmp, sizeof(tmp));
+        
+        PrintToConsole(caller, "%13s %L",
+                tmp,
+                client
+                );
+    }
+    PrintToConsole(caller, "---------------------------------");
     return Plugin_Handled;
 }
 
@@ -780,9 +826,26 @@ stock StripWeapons(client)
     }
 }
 
-stock bool:InGrace()
+stock SetRoundState(FoZRoundState:round_state)
 {
-    return GetTime() - g_RoundStart < 15;
+    WriteLog("Set RoundState: %d", round_state);
+    g_RoundState = round_state;
+}
+
+stock FoZRoundState:GetRoundState()
+{
+    return g_RoundState;
+}
+
+stock RoundEndCheck()
+{
+    //Check if any Humans are alive and if not force zombies to win
+    //NOTE:  The fof_teamplay entity should be handling this but there are some
+    //cases where it does not work.
+    if(Team_GetClientCount(TEAM_HUMAN, CLIENTFILTER_ALIVE) <= 0)
+    {
+        AcceptEntityInput(g_Teamplay, "InputDespVictory");
+    }
 }
 
 stock bool:SetGameDescription(String:description[], bool:override = true)
