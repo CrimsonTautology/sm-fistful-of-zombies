@@ -479,8 +479,6 @@ public Action:Command_Zombie(client, args)
     Team_GetName(TEAM_HUMAN, tmp, sizeof(tmp));
     WriteLog("TEAM_HUMAN  = %s", tmp);
 
-    WeaponDump();
-
     return Plugin_Handled;
 }
 
@@ -558,16 +556,13 @@ SetDefaultConVars()
 
 RemoveCrates()
 {
-    new n = Entity_KillAllByClassName("fof_crate*");
-    WriteLog("Removed %d crates", n);
+    Entity_KillAllByClassName("fof_crate*");
 }
 
 RemoveWeapons()
 {
-    new n = 0;
-    n += Entity_KillAllByClassName("weapon*");
-    n += Entity_KillAllByClassName("dynamite*");
-    WriteLog("Removed %d weapons", n);
+    Entity_KillAllByClassName("weapon*");
+    Entity_KillAllByClassName("dynamite*");
 }
 
 //Change all info_player_fof spawn points to a round robin
@@ -665,11 +660,6 @@ SpawnZombieTeamplay()
 
         DispatchSpawn(ent);
         ActivateEntity(ent);
-
-        //OnRoundTimeEnd //Winner is Humans(vig)
-        //OnNoDespAlive  //Respawn Zombies(desp)
-        //OnNoVigAlive   //Winner is Zombies(desp)
-        //OnNewBuyRound  //Block or remove cash
     }
 
     return ent;
@@ -927,32 +917,6 @@ stock bool:SetGameDescription(String:description[], bool:override = true)
     if(override) return SteamWorks_SetGameDescription(description);
 #endif
     return false;
-}
-
-stock WeaponDump()
-{
-#if defined DEBUG
-    new String:name[512];
-    new Float:origin[3];
-    new weapon = INVALID_ENT_REFERENCE, st, prit, pric, prin, vm, owner, kj12, Entity_Flags:eflags;
-    while ((weapon = FindEntityByClassname(weapon, "weapon*")) != INVALID_ENT_REFERENCE) {
-        Entity_GetClassName(weapon, name, sizeof(name));
-        Entity_GetAbsOrigin(weapon, origin);
-        owner = Weapon_GetOwner(weapon);
-        st = Weapon_GetState(weapon);
-        kj12 = 0;//GetEntPropEnt(weapon, Prop_Send, "m_fofKJ2");
-        eflags = Entity_GetEFlags(weapon);
-        WriteLog("%s(%d) (%f, %f, %f): owner=%d, state=%d, KJ2=%d, eflags=%d",
-                name,
-                weapon,
-                origin[0], origin[1], origin[2],
-                owner,
-                st,
-                kj12,
-                eflags
-                );
-    }
-#endif
 }
 
 stock WriteLog(const String:format[], any:... )
