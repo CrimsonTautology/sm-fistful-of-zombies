@@ -335,9 +335,7 @@ public Action:Timer_HumanDeathDelay(Handle:timer, any:userid)
     if(!IsEnabled()) return Plugin_Handled;
     if(!Client_IsIngame(client)) return Plugin_Handled;
 
-    ResetLeapMeter(client);
     JoinZombieTeam(client);
-    Entity_SetModelIndex(client, g_Model_Skeleton);
 
     return Plugin_Handled;
 }
