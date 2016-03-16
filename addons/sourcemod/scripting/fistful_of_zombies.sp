@@ -462,21 +462,23 @@ public Action:Command_Zombie(client, args)
 
 public Action:Command_Dump(caller, args)
 {
-    new String:tmp[32], team;
+    new String:tmp[32], team, health;
     PrintToConsole(caller, "---------------------------------");
     PrintToConsole(caller, "RoundState: %d", g_RoundState);
     PrintToConsole(caller, "---------------------------------");
-    PrintToConsole(caller, "team          user");
+    PrintToConsole(caller, "team          health user");
     for (new client=1; client <= MaxClients; client++)
     {
         if(!IsClientInGame(client) || IsFakeClient(client))
             continue;
 
         team = GetClientTeam(client);
+        health = Entity_GetHealth(client);
         Team_GetName(team, tmp, sizeof(tmp));
         
-        PrintToConsole(caller, "%13s %L",
+        PrintToConsole(caller, "%13s %6d %L",
                 tmp,
+                health,
                 client
                 );
     }
