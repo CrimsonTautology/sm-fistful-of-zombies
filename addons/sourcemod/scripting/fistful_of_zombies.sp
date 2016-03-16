@@ -373,11 +373,13 @@ public Action:Hook_OnWeaponCanUse(client, weapon)
     if(!IsEnabled()) return Plugin_Continue;
 
     //Block zombies from picking up guns
-    if (IsZombie(client)) {
+    if (IsZombie(client))
+    {
         decl String:class[MAX_KEY_LENGTH];
         GetEntityClassname(weapon, class, sizeof(class));
 
-        if (!StrEqual(class, "weapon_fists")) { //TODO have whitelist mechanic
+        if (!StrEqual(class, "weapon_fists"))
+        {
             EmitSoundToClient(client, SOUND_NOPE);
             PrintCenterText(client, "Zombies Can Not Use Guns"); 
             PrintToChat(client, "Zombies Can Not Use Guns"); 
@@ -393,10 +395,12 @@ public Action:Hook_OnWeaponSwitchPost(client, weapon)
 {
     //TODO
     //Change zombie fists to ghost fists
-    if(IsZombie(client)) {
+    if(IsZombie(client))
+    {
         decl String:class[MAX_KEY_LENGTH];
         GetEntityClassname(weapon, class, sizeof(class));
-        if(StrEqual(class, "weapon_fists")) {
+        if(StrEqual(class, "weapon_fists"))
+        {
             Weapon_SetViewModelIndex(weapon, g_Model_FistsGhost);
         }
     }
@@ -440,25 +444,17 @@ public Action:Command_JoinTeam(client, const String:command[], args)
 
 public Action:SoundCallback(clients[64], &numClients, String:sample[PLATFORM_MAX_PATH], &entity, &channel, &Float:volume, &level, &pitch, &flags)
 {
-    //WriteLog("---Hit SoundCallBack(%s) by %d: channel(%d) volume(%f) level(%d) pitch(%d) flags(%d)", sample, entity, channel, volume, level, pitch, flags);
-    //---Hit SoundCallBack(#/music/bounty/bounty_objective_stinger1.mp3) by 1: channel(0) volume(0.599609) level(80) pitch(100) flags(0)
-    //---Hit SoundCallBack(player/footsteps/grass3.wav) by 3: channel(4) volume(0.400000) level(70) pitch(100) flags(0)
-    //---Hit SoundCallBack(player/voice2/pain/pl_death2.wav) by 3: channel(0) volume(0.602976) level(95) pitch(104) flags(0)
-    //---Hit SoundCallBack(player/voice2/fistfight_putemup.wav) by 1: channel(0) volume(1.000000) level(95) pitch(97) flags(0)
-
-
     if (entity > 0 && entity <= MaxClients)
     {
         //Change the voice of zombie players
         if(IsZombie(entity))
         {
             if(StrContains(sample, "player/voice") == 0 || StrContains(sample, "npc/mexican") == 0)
-                //WriteLog("---Change Voice(%s) by %L: channel(%d) volume(%f) level(%d) pitch(%d) flags(%d)", sample, entity, channel, volume, level, pitch, flags);
-                //TODO change voice file?
-                //Next expression is ((175/(1+6x))+75) so results stay between 75 and 250 with 100 pitch at normal size.
+            {
                 pitch = 40;
-            flags |= SND_CHANGEPITCH;
-            return Plugin_Changed;
+                flags |= SND_CHANGEPITCH;
+                return Plugin_Changed;
+            }
         }
     }
     return Plugin_Continue;
