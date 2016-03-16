@@ -135,8 +135,8 @@ public OnPluginStart()
     g_HUD1 = CreateHudSynchronizer();
 
     AddCommandListener(Command_JoinTeam, "jointeam");
-    AddCommandListener(Command_JoinTeam, "equipmenu");
-    AddCommandListener(Command_JoinTeam, "chooseteam");
+    //AddCommandListener(Command_JoinTeam, "equipmenu");
+    //AddCommandListener(Command_JoinTeam, "chooseteam");
 
     g_Cvar_TeambalanceAllowed = FindConVar("fof_sv_teambalance_allowed");
     g_Cvar_TeamsUnbalanceLimit = FindConVar("mp_teams_unbalance_limit");
@@ -286,7 +286,7 @@ public Action:Event_PlayerTeam(Event:event, const String:name[], bool:dontBroadc
     new oldteam   = GetEventInt(event, "oldteam");
 
     //If A player joins in late as a human force them to be a zombie
-    if(team == TEAM_HUMAN && GetTime() - g_RoundStart > 15)
+    if(team == TEAM_HUMAN && !InGrace())
     {
         WriteLog("-------------blocked %L from joining %d (was %d)", client, team, oldteam);
         //CreateTimer(0.1, Timer_HumanDeathDelay, userid, TIMER_FLAG_NO_MAPCHANGE);
@@ -410,14 +410,30 @@ public Action:Command_JoinTeam(client, const String:command[], args)
     if(!IsEnabled()) return Plugin_Continue;
     if(!Client_IsIngame(client)) return Plugin_Continue; 
 
-    //Block non-spectators from changing teams
-    if (GetClientTeam(client) > 1) 
-    { 
-        EmitSoundToClient(client, SOUND_NOPE);
-        PrintCenterText(client, "Can Not Change Teams Midgame"); 
-        PrintToChat(client, "Can Not Change Teams Midgame"); 
-        return Plugin_Stop; 
-    } 
+    decl String:cmd[32];
+    GetCmdArg(1, cmd, sizeof(cmd));
+
+    WriteLog("Hit JoinTeam (%N -> %s)", client, cmd);
+
+    if(!InGrace())
+    {
+        //If attempting to join human team or random then join zombie team
+        if(StrEqual(cmd, "Desperados", false) || StrEqual(cmd, "auto", false))
+        {
+            JoinZombieTeam(client);
+            return Plugin_Handled;
+        }
+        //If attempting to join zombie team or spectator, let them
+        else if(StrEqual(cmd, "Vigilantes", false) || StrEqual(cmd, "spectate", false))
+        {
+            return Plugin_Continue;
+        }
+        //Prevent joining any other team
+        else
+        {
+            return Plugin_Handled;
+        }
+    }
 
     return Plugin_Continue;
 }  
@@ -898,6 +914,11 @@ stock UpdateHud(client)
             ShowSyncHudText(client, g_HUD1, buf);
         }
     }
+}
+
+stock bool:InGrace()
+{
+    return GetTime() - g_RoundStart < 15;
 }
 
 stock bool:SetGameDescription(String:description[], bool:override = true)
