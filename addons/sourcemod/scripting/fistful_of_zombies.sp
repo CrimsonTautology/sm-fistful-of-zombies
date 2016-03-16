@@ -215,7 +215,7 @@ public Event_PlayerSpawn(Handle:event, const String:name[], bool:dontBroadcast)
     new userid = GetEventInt(event, "userid");
     new client = GetClientOfUserId(userid);
 
-    CreateTimer(0.1, Timer_PlayerSpawnDelay, userid, TIMER_FLAG_NO_MAPCHANGE);
+    RequestFrame(PlayerSpawnDelay, userid);
 }
 
 public Event_PlayerDeath(Handle:event, const String:name[], bool:dontBroadcast)
@@ -233,7 +233,7 @@ public Event_PlayerDeath(Handle:event, const String:name[], bool:dontBroadcast)
         PrintCenterTextAll("%N has turned...", client);
         EmitSoundToAll(SOUND_STINGER, .flags = SND_CHANGEPITCH, .pitch = 80);
 
-        CreateTimer(1.0, Timer_HumanDeathDelay, userid, TIMER_FLAG_NO_MAPCHANGE);
+        RequestFrame(BecomeZombieDelay, userid);
     }
 }
 
@@ -248,6 +248,7 @@ public Event_RoundStart(Event:event, const String:name[], bool:dontBroadcast)
     ConvertWhiskey(g_LootTable, g_LootTotalWeight);
     RemoveCrates();
     RandomizeTeams();
+    SetDefaultConVars();
 }
 
 
@@ -272,7 +273,7 @@ public Action:Event_PlayerTeam(Event:event, const String:name[], bool:dontBroadc
     if(team == TEAM_HUMAN && GetRoundState() == RoundActive)
     {
         WriteLog("-------------blocked %L from joining %d (was %d)", client, team, oldteam);
-        //CreateTimer(0.1, Timer_HumanDeathDelay, userid, TIMER_FLAG_NO_MAPCHANGE);
+        RequestFrame(BecomeZombieDelay, userid);
 
         return Plugin_Handled;
     }
@@ -281,13 +282,13 @@ public Action:Event_PlayerTeam(Event:event, const String:name[], bool:dontBroadc
 
 }
 
-public Action:Timer_PlayerSpawnDelay(Handle:timer, any:userid)
+public PlayerSpawnDelay(any:userid)
 {
     new client = GetClientOfUserId(userid);
 
-    if(!IsEnabled()) return Plugin_Handled;
-    if(!Client_IsIngame(client)) return Plugin_Handled;
-    if(!IsPlayerAlive(client)) return Plugin_Handled;
+    if(!IsEnabled()) return;
+    if(!Client_IsIngame(client)) return;
+    if(!IsPlayerAlive(client)) return;
 
     if(IsHuman(client))
     {
@@ -303,20 +304,16 @@ public Action:Timer_PlayerSpawnDelay(Handle:timer, any:userid)
 
         PrintCenterText(client, "Ughhhh..... BRAINNNSSSS"); 
     }
-
-    return Plugin_Handled;
 }
 
-public Action:Timer_HumanDeathDelay(Handle:timer, any:userid)
+public BecomeZombieDelay(any:userid)
 {
     new client = GetClientOfUserId(userid);
 
-    if(!IsEnabled()) return Plugin_Handled;
-    if(!Client_IsIngame(client)) return Plugin_Handled;
+    if(!IsEnabled()) return;
+    if(!Client_IsIngame(client)) return;
 
     JoinZombieTeam(client);
-
-    return Plugin_Handled;
 }
 
 public Action:Timer_EndGrace(Handle:timer)
@@ -457,6 +454,7 @@ public Action:Command_Zombie(client, args)
     Team_GetName(TEAM_HUMAN, tmp, sizeof(tmp));
     WriteLog("TEAM_HUMAN  = %s", tmp);
 
+    SetDefaultConVars();
     return Plugin_Handled;
 }
 
@@ -465,6 +463,7 @@ public Action:Command_Dump(caller, args)
     new String:tmp[32], team, health;
     PrintToConsole(caller, "---------------------------------");
     PrintToConsole(caller, "RoundState: %d", g_RoundState);
+    PrintToConsole(caller, "TEAM_ZOMBIE: %d, TEAM_HUMAN: %d", TEAM_ZOMBIE, TEAM_HUMAN);
     PrintToConsole(caller, "---------------------------------");
     PrintToConsole(caller, "team          health user");
     for (new client=1; client <= MaxClients; client++)
