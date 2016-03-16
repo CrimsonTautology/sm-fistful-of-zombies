@@ -75,7 +75,6 @@ new g_Model_FistsGhost;
 
 new Handle:g_HUD1 = INVALID_HANDLE;
 
-new bool:g_Infected[MAXPLAYERS+1] = false;
 new g_LeapMeter[MAXPLAYERS+1] = {0, ...};
 
 public Plugin:myinfo =
@@ -716,25 +715,6 @@ stock RandomizeTeams()
     {
         JoinZombieTeam(clients[i]);
     }
-}
-
-stock bool:IsInfected(client)
-{
-    return g_Infected[client];
-}
-
-stock Infect(client)
-{
-    g_Infected[client] = true;
-}
-
-stock ResetInfection(client)
-{
-    g_Infected[client] = false;
-}
-
-stock ResetInfectionAll()
-{
 }
 
 stock GetRoundTime()
