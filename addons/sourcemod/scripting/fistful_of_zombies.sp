@@ -29,14 +29,18 @@
 
 #define GAME_DESCRIPTION    "Fistful Of Zombies"
 #define SOUND_ROUNDSTART    "music/standoff1.mp3"
-#define SOUND_VULTURE1      "animals/vulture1.wav"
-#define SOUND_VULTURE2      "animals/vulture2.wav"
-#define SOUND_VULTURE3      "animals/vulture3.wav"
+#define SOUND_LEAP          "player/fallscream2.wav"
 #define SOUND_STINGER       "music/kill1.wav"
 #define SOUND_NOPE          "player/voice/no_no1.wav"
 
 #define TEAM_ZOMBIE         3   //Desperados
 #define TEAM_HUMAN          2   //Vigilantes
+
+#define HUD1_X 0.18
+#define HUD1_Y 0.04
+
+#define HUD2_X 0.18
+#define HUD2_Y 0.10
 
 new Handle:g_Cvar_Enabled = INVALID_HANDLE;
 new Handle:g_Cvar_Config = INVALID_HANDLE;
@@ -69,7 +73,10 @@ new g_Model_Ghost;
 new g_Model_Skeleton;
 new g_Model_FistsGhost;
 
+new Handle:g_HUD1 = INVALID_HANDLE;
+
 new bool:g_Infected[MAXPLAYERS+1] = false;
+new g_LeapMeter[MAXPLAYERS+1] = {0, ...};
 
 public Plugin:myinfo =
 {
@@ -123,10 +130,9 @@ public OnPluginStart()
     HookEvent("round_end", Event_RoundEnd);
     HookEvent("player_team", Event_PlayerTeam, EventHookMode_Pre);
 
-    RegConsoleCmd("sm_leap", Command_Leap, "TEST test leap command"); //TODO
-
-
     RegAdminCmd("sm_zombie", Command_Zombie, ADMFLAG_ROOT, "TEST command");//TODO
+
+    g_HUD1 = CreateHudSynchronizer();
 
     AddCommandListener(Command_JoinTeam, "jointeam");
     AddCommandListener(Command_JoinTeam, "equipmenu");
@@ -146,6 +152,7 @@ public OnClientPostAdminCheck(client)
     if(!IsEnabled()) return;
 
     SDKHook(client, SDKHook_WeaponCanUse, Hook_OnWeaponCanUse);
+    //SDKHook(client, SDKHook_WeaponSwitchPost, Hook_OnWeaponSwitchPost);//TODO
 }
 public OnClientDisconnect(client)
 {
@@ -167,9 +174,7 @@ public OnMapStart()
 
     //Cache materials
     PrecacheSound(SOUND_ROUNDSTART, true);
-    PrecacheSound(SOUND_VULTURE1, true);
-    PrecacheSound(SOUND_VULTURE2, true);
-    PrecacheSound(SOUND_VULTURE3, true);
+    PrecacheSound(SOUND_LEAP, true);
     PrecacheSound(SOUND_STINGER, true);
     PrecacheSound(SOUND_NOPE, true);
 
@@ -200,6 +205,24 @@ public OnConfigsExecuted()
 
     SetGameDescription(GAME_DESCRIPTION);
     SetDefaultConVars();
+}
+
+public Action:OnPlayerRunCmd(client, &buttons, &impulse, Float:vel[3], Float:angles[3], &weapon, &subtype, &cmdnum, &tickcount, &seed, mouse[2])
+{
+    /*
+    if(!IsEnabled()) return Plugin_Continue;
+
+    if(IsZombie(client)
+        && CanLeap(client)
+        && buttons & (IN_JUMP)
+        && buttons & (IN_DUCK)
+        && GetEntityFlags(client) & FL_ONGROUND)
+    {
+        PerformLeap(client);
+    }
+    */
+
+    return Plugin_Continue;
 }
 
 public Event_PlayerActivate(Handle:event, const String:name[], bool:dontBroadcast)
@@ -266,7 +289,7 @@ public Action:Event_PlayerTeam(Event:event, const String:name[], bool:dontBroadc
     if(team == TEAM_HUMAN && GetTime() - g_RoundStart > 15)
     {
         WriteLog("-------------blocked %L from joining %d (was %d)", client, team, oldteam);
-        CreateTimer(0.1, Timer_HumanDeathDelay, userid, TIMER_FLAG_NO_MAPCHANGE);
+        //CreateTimer(0.1, Timer_HumanDeathDelay, userid, TIMER_FLAG_NO_MAPCHANGE);
 
         return Plugin_Handled;
     }
@@ -292,8 +315,9 @@ public Action:Timer_PlayerSpawnDelay(Handle:timer, any:userid)
     } else if(IsZombie(client))
     {
         //Force client model
+        ResetLeapMeter(client);
         Entity_SetModelIndex(client, g_Model_Skeleton);
-        Client_SetScreenOverlay(client, "debug/yuv");
+        //Client_SetScreenOverlay(client, "debug/yuv");
 
         PrintCenterText(client, "Ughhhh..... BRAINNNSSSS"); 
     }
@@ -308,6 +332,7 @@ public Action:Timer_HumanDeathDelay(Handle:timer, any:userid)
     if(!IsEnabled()) return Plugin_Handled;
     if(!Client_IsIngame(client)) return Plugin_Handled;
 
+    ResetLeapMeter(client);
     JoinZombieTeam(client);
     Entity_SetModelIndex(client, g_Model_Skeleton);
 
@@ -321,17 +346,24 @@ public Action:Timer_Repeat(Handle:timer)
     for (new client=1; client <= MaxClients; client++)
     {
         if(!IsClientInGame(client)) continue;
-        if(!IsPlayerAlive(client)) continue;
-
+        
+        
         if(IsHuman(client))
         {
             //No-op
 
         }else if(IsZombie(client))
         {
-            StripWeapons(client);
+            if(IsPlayerAlive(client))
+            {
+                IncrementLeapMeter(client);
+                StripWeapons(client);
+            }
         }
+
+        //UpdateHud(client);
     }
+
 
     return Plugin_Handled;
 }
@@ -351,6 +383,21 @@ public Action:Hook_OnWeaponCanUse(client, weapon)
             PrintToChat(client, "Zombies Can Not Use Guns"); 
 
             return Plugin_Handled;
+        }
+    }
+
+    return Plugin_Continue;
+}
+
+public Action:Hook_OnWeaponSwitchPost(client, weapon)
+{
+    //TODO
+    //Change zombie fists to ghost fists
+    if(IsZombie(client)) {
+        decl String:class[MAX_KEY_LENGTH];
+        GetEntityClassname(weapon, class, sizeof(class));
+        if(StrEqual(class, "weapon_fists")) {
+            Weapon_SetViewModelIndex(weapon, g_Model_FistsGhost);
         }
     }
 
@@ -390,10 +437,10 @@ public Action:SoundCallback(clients[64], &numClients, String:sample[PLATFORM_MAX
         if(IsZombie(entity))
         {
             if(StrContains(sample, "player/voice") == 0 || StrContains(sample, "npc/mexican") == 0)
-            //WriteLog("---Change Voice(%s) by %L: channel(%d) volume(%f) level(%d) pitch(%d) flags(%d)", sample, entity, channel, volume, level, pitch, flags);
-            //TODO change voice file?
-            //Next expression is ((175/(1+6x))+75) so results stay between 75 and 250 with 100 pitch at normal size.
-            pitch = 40;
+                //WriteLog("---Change Voice(%s) by %L: channel(%d) volume(%f) level(%d) pitch(%d) flags(%d)", sample, entity, channel, volume, level, pitch, flags);
+                //TODO change voice file?
+                //Next expression is ((175/(1+6x))+75) so results stay between 75 and 250 with 100 pitch at normal size.
+                pitch = 40;
             flags |= SND_CHANGEPITCH;
             return Plugin_Changed;
         }
@@ -401,13 +448,6 @@ public Action:SoundCallback(clients[64], &numClients, String:sample[PLATFORM_MAX
     return Plugin_Continue;
 }
 
-
-public Action:Command_Leap(client, args)
-{
-    PerformLeap(client);
-
-    return Plugin_Handled;
-}
 
 public Action:Command_Zombie(client, args)
 {
@@ -572,7 +612,7 @@ ConvertWhiskey(Handle:loot_table, loot_total_weight)
 
         converted = Weapon_Create(loot, origin, angles);
         Entity_AddEFlags(converted, EFL_NO_GAME_PHYSICS_SIMULATION | EFL_DONTBLOCKLOS);
-        
+
         WriteLog("Whiskey[%d] to %s", count, loot);//TODO
 
         count++;
@@ -797,6 +837,26 @@ stock StripWeapons(client)
     }
 }
 
+stock bool:CanLeap(client)
+{
+    return g_LeapMeter[client] >= 100;
+}
+
+stock IncrementLeapMeter(client)
+{
+    g_LeapMeter[client] += 100 / (GetRespawnTime() * 3);
+}
+
+stock ResetLeapMeter(client)
+{
+    g_LeapMeter[client] = 0;
+}
+
+stock GetLeapMeter(client)
+{
+    return g_LeapMeter[client];
+}
+
 stock bool:PerformLeap(client)
 {
     if(!Client_IsIngame(client)) return false;
@@ -808,17 +868,36 @@ stock bool:PerformLeap(client)
     GetClientAbsOrigin(client, origin);
     GetClientEyeAngles(client, angles);
 
-    init = angles[0];
-    angles[0] = -30.0;
+    angles[0] -= 30.0;
     GetAngleVectors(angles, velocity, NULL_VECTOR, NULL_VECTOR);
 
-    ScaleVector(velocity, 1000.0);
-    angles[0] = init;
+    ScaleVector(velocity, 750.0);
 
     Entity_SetBaseVelocity(client, velocity);
-    //TeleportEntity(client, ClientAbsOrigin, ClientEyeAngle, Velocity); //Toss 'em
+
+    EmitSoundToAll(SOUND_LEAP, client, SNDCHAN_AUTO, SNDLEVEL_SCREAMING, SND_CHANGEPITCH, SNDVOL_NORMAL, 60);
+    ResetLeapMeter(client);
 
     return true;
+}
+
+stock UpdateHud(client)
+{
+    new String:buf[250], leap;
+
+    ClearSyncHud(client, g_HUD1);
+    SetHudTextParams(HUD1_X, HUD1_Y, 1.125, 0, 255, 0, 180, 0, 0.0, 0.0, 0.0);
+
+    if(IsZombie(client))
+    {
+        leap = Math_Max(100, GetLeapMeter(client));
+        Format(buf, sizeof(buf), "Leap %d%%", leap);
+
+        if(ShowHudText(client, -1, buf) < 0 && g_HUD1 != INVALID_HANDLE )
+        {
+            ShowSyncHudText(client, g_HUD1, buf);
+        }
+    }
 }
 
 stock bool:SetGameDescription(String:description[], bool:override = true)
@@ -843,14 +922,14 @@ stock WeaponDump()
         kj12 = 0;//GetEntPropEnt(weapon, Prop_Send, "m_fofKJ2");
         eflags = Entity_GetEFlags(weapon);
         WriteLog("%s(%d) (%f, %f, %f): owner=%d, state=%d, KJ2=%d, eflags=%d",
-        name,
-        weapon,
-        origin[0], origin[1], origin[2],
-        owner,
-        st,
-        kj12,
-        eflags
-        );
+                name,
+                weapon,
+                origin[0], origin[1], origin[2],
+                owner,
+                st,
+                kj12,
+                eflags
+                );
     }
 #endif
 }

@@ -5,7 +5,7 @@ fistful_of_zombies
 	{
 		nothing	{ weight 50 }
 
-        weapon_knife { weight 11 }
+        //weapon_knife { weight 11 }
         weapon_deringer { weight 11 }
         weapon_sawedoff_shotgun { weight 11 }
         weapon_coltnavy { weight 11 }
@@ -17,10 +17,10 @@ fistful_of_zombies
         weapon_carbine { weight 9 }
 
         weapon_maresleg { weight 8 }
-        weapon_dynamite { weight 8 } 
+        //weapon_dynamite { weight 8 } 
         weapon_henryrifle { weight 8 }
 
-        weapon_dynamite_black { weight 6 }
+        //weapon_dynamite_black { weight 6 }
         weapon_peacemaker { weight 6 }
         weapon_coachgun { weight 6 }
 
