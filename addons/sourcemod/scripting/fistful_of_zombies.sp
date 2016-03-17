@@ -293,7 +293,8 @@ public PlayerSpawnDelay(any:userid)
     if(IsHuman(client))
     {
         //If a player spawns as human give them their primary and secondary gear
-        GiveInitialGear(client);
+        CreateTimer(0.2, Timer_GiveSecondaryWeapon, userid, TIMER_FLAG_NO_MAPCHANGE);  
+        CreateTimer(0.3, Timer_GivePrimaryWeapon, userid, TIMER_FLAG_NO_MAPCHANGE);  
 
         PrintCenterText(client, "Survive the zombie plague!"); 
     } else if(IsZombie(client))
@@ -314,6 +315,41 @@ public BecomeZombieDelay(any:userid)
     if(!Client_IsIngame(client)) return;
 
     JoinZombieTeam(client);
+}
+
+public Action:Timer_GivePrimaryWeapon(Handle:timer, any:userid)
+{
+    new client = GetClientOfUserId(userid);
+
+    if(!IsEnabled()) return Plugin_Handled;
+    if(!Client_IsIngame(client)) return Plugin_Handled;
+    if(IsZombie(client)) return Plugin_Handled;
+    new String:weapon[MAX_KEY_LENGTH];
+
+    GetRandomValueFromTable(g_GearPrimaryTable, g_GearPrimaryTotalWeight, weapon, sizeof(weapon));
+    GivePlayerItem(client, weapon);
+    PrintToChat(client, "Given %s", weapon);
+    UseWeapon(client, weapon);
+
+    return Plugin_Handled;
+}
+
+public Action:Timer_GiveSecondaryWeapon(Handle:timer, any:userid)
+{
+    new client = GetClientOfUserId(userid);
+
+    if(!IsEnabled()) return Plugin_Handled;
+    if(!Client_IsIngame(client)) return Plugin_Handled;
+    if(IsZombie(client)) return Plugin_Handled;
+
+    new String:weapon[MAX_KEY_LENGTH];
+
+    GetRandomValueFromTable(g_GearSecondaryTable, g_GearSecondaryTotalWeight, weapon, sizeof(weapon));
+    GivePlayerItem(client, weapon);
+    PrintToChat(client, "Given %s", weapon);
+    UseWeapon(client, weapon, true);
+
+    return Plugin_Handled;
 }
 
 public Action:Timer_EndGrace(Handle:timer)
