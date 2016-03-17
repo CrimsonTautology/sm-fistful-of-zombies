@@ -65,6 +65,8 @@ new g_Model_Ghost;
 new g_Model_Skeleton;
 new g_Model_FistsGhost;
 
+new g_PredictedViewModel[MAXPLAYERS];
+
 
 enum FoZRoundState
 {
@@ -214,6 +216,8 @@ public Event_PlayerSpawn(Handle:event, const String:name[], bool:dontBroadcast)
 
     new userid = GetEventInt(event, "userid");
     new client = GetClientOfUserId(userid);
+
+    //g_PredictedViewModel[client] = GetViewModelIndex(client);
 
     RequestFrame(PlayerSpawnDelay, userid);
 }
@@ -416,7 +420,8 @@ public Action:Hook_OnWeaponSwitchPost(client, weapon)
         GetEntityClassname(weapon, class, sizeof(class));
         if(StrEqual(class, "weapon_fists"))
         {
-            Weapon_SetViewModelIndex(weapon, g_Model_FistsGhost);
+            SetEntProp(weapon, Prop_Send, "m_nModelIndex", 0);
+            SetEntProp(g_PredictedViewModel[client], Prop_Send, "m_nModelIndex", g_Model_FistsGhost);
         }
     }
 
@@ -490,9 +495,27 @@ public Action:Command_Zombie(client, args)
     Team_GetName(TEAM_HUMAN, tmp, sizeof(tmp));
     WriteLog("TEAM_HUMAN  = %s", tmp);
 
-    SetDefaultConVars();
+    Entity_ChangeOverTime(client, 0.1, InfectionStep);
     return Plugin_Handled;
 }
+
+public bool:InfectionStep(&client, &Float:interval, &currentCall)
+{
+    if(!IsEnabled())
+    if(!Client_IsIngame(client)) return false;
+    if(!IsPlayerAlive(client)) return false;
+    if(!IsHuman(client)) return false;
+    if(GetRoundState() != RoundActive) return false;
+
+    new Float:drunkness = GetEntPropFloat(client, Prop_Send, "m_flDrunkness");
+    drunkness = currentCall * 1.0;
+    SetEntPropFloat(client, Prop_Send, "m_flDrunkness", drunkness);
+
+    WriteLog("%N at %d -> %f", client, currentCall, drunkness);
+
+    return true;
+}
+
 
 public Action:Command_Dump(caller, args)
 {
@@ -851,6 +874,20 @@ stock RandomizeModel(client)
             case 1: { Entity_SetModelIndex(client, g_Model_Skeleton); }
         }
     }
+}
+
+stock GetViewModelIndex(client)
+{
+    new ent;
+    while ((ent = FindEntityByClassname(ent, "predicted_viewmodel")) != -1)
+    {
+        new owner = GetEntPropEnt(ent, Prop_Send, "m_hOwner");
+
+        if (owner != client) continue;
+
+        return ent;
+    }
+    return INVALID_ENT_REFERENCE;
 }
 
 stock GetRoundTime()
