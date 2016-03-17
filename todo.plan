@@ -1,14 +1,23 @@
+- Current
+    - Way to change zombie view models to ghost fists (skeleton hands)
+        o was able to change view model with OnWeaponSwitchPost hook but the ghost fists model do not respect the animations of the normal fists.
+    - Add random infection chance on zombie punch
+        - once infected increase m_flDrunkness count until a threshold
+        - should take ~30 seconds
+        - Inplace team/model switch; weapon removal
+    - Random loot weapons should have the outline glow
+
 - Manage cvars
-    - zombie respawn wave time
-    - round time
+    x zombie respawn wave time
+    x round time
     - infection chance
     - infection time
-    - zombie team ratio
+    x zombie team ratio
 
-- Auto-balance
-    - is completely random right now
-    - add cvar to determine human to zombie ratio
-        - shuffle list of players and then round robin with ratio
+x Auto-balance
+    x is completely random right now
+    x add cvar to determine human to zombie ratio
+        x shuffle list of players and then round robin with ratio
 
 - Balance
     - infection
@@ -25,13 +34,17 @@
         - maybe increase duration/ammount of flames + increase zombie flame damage
         - would also apply to rpg
     - zombie abilities
-        - allow zombies to leap?  move faster?
+        o allow zombies to leap?  move faster?
+            o too complicated;  how do you call the leap command?
+            o resulted in players just waiting for the leap
+            o leaping too strong
         - maybe throw dynamite?
             - prevent holding fuse to suicide bomb
             - prevent holding fuse when thrown;  after thrown force max fuse duration
                 - idea is to scare humans from camping in one area for too long.  Dynamite would force them to evacuate but not instantly kill them
 
-- Zombie Classes
+o Zombie Classes
+    o This complicates the game too much as I found out
     - perks
         - all classes have a perk meter that starts at zero and will fill up as they are alive.  once it fills up they can use their perk with right mouse button
         - perk fill speed should increase the fewer zombies there are?
