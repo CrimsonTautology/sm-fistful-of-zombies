@@ -940,7 +940,7 @@ stock bool:InfectionChanceRoll()
     if(humans <= 1) return false;
 
     new Float:chance = GetConVarFloat(g_Cvar_Infection);
-    chance *= (Float:humans / MAXPLAYERS);
+    //chance *= (Float:humans / Float:MAXPLAYERS);
 
     WriteLog("Hit chance %f", chance);
 
@@ -954,10 +954,16 @@ stock BecomeInfected(client)
 stock InfectedToZombie(client)
 {
     StripWeapons(client);
+    UseWeapon(client, "weapon_fists");
+
     JoinZombieTeam(client);
     Entity_SetModelIndex(client, g_Model_Skeleton);
+
     EmitSoundToAll(SOUND_CHANGED, client, SNDCHAN_AUTO, SNDLEVEL_SCREAMING, SND_CHANGEPITCH, SNDVOL_NORMAL, 40);
     SetEntPropFloat(client, Prop_Send, "m_flDrunkness", 0.0);
+
+    PrintCenterTextAll("%N has succumbed to the infection...", client);
+    EmitSoundToAll(SOUND_STINGER, .flags = SND_CHANGEPITCH, .pitch = 80);
 }
 
 public bool:InfectionStep(&client, &Float:interval, &currentCall)
@@ -985,7 +991,7 @@ public bool:InfectionStep(&client, &Float:interval, &currentCall)
         return false;
     }
 
-    if(GetURandomFloat() < (currentCall / 300.0))
+    if(currentCall > 170 && GetURandomFloat() < (currentCall / 300.0))
     {
         FakeClientCommand(client, "vc 15");
     }
