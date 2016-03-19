@@ -380,6 +380,7 @@ public Action:Timer_Repeat(Handle:timer)
         }else if(IsZombie(client))
         {
             //No-op
+            StripWeapons(client);
         }
     }
 
