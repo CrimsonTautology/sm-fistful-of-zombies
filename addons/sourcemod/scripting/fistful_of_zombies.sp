@@ -30,6 +30,7 @@
 #define GAME_DESCRIPTION    "Fistful Of Zombies"
 #define SOUND_ROUNDSTART    "music/standoff1.mp3"
 #define SOUND_STINGER       "music/kill1.wav"
+#define SOUND_CHANGED       "player/fallscream2.wav"
 #define SOUND_NOPE          "player/voice/no_no1.wav"
 
 #define TEAM_ZOMBIE         3   //Desperados
@@ -40,6 +41,7 @@ new Handle:g_Cvar_Config = INVALID_HANDLE;
 new Handle:g_Cvar_RoundTime = INVALID_HANDLE;
 new Handle:g_Cvar_RespawnTime = INVALID_HANDLE;
 new Handle:g_Cvar_Ratio = INVALID_HANDLE;
+new Handle:g_Cvar_Infection = INVALID_HANDLE;
 
 new Handle:g_Cvar_TeambalanceAllowed = INVALID_HANDLE;
 new Handle:g_Cvar_TeamsUnbalanceLimit = INVALID_HANDLE;
@@ -121,6 +123,14 @@ public OnPluginStart()
             true, 0.01,
             true, 1.0);
 
+    g_Cvar_Infection = CreateConVar(
+            "foz_infection",
+            "0.25",
+            "Chance that a human will be infected when punched by a zombie.  Value is scaled such that more human players increase the chance",
+            FCVAR_PLUGIN,
+            true, 0.01,
+            true, 1.0);
+
 
     HookEvent("player_activate", Event_PlayerActivate);
     HookEvent("player_spawn", Event_PlayerSpawn);
@@ -150,6 +160,7 @@ public OnClientPostAdminCheck(client)
     if(!IsEnabled()) return;
 
     SDKHook(client, SDKHook_WeaponCanUse, Hook_OnWeaponCanUse);
+    SDKHook(client, SDKHook_OnTakeDamage, Hook_OnTakeDamage);
     //SDKHook(client, SDKHook_WeaponSwitchPost, Hook_OnWeaponSwitchPost);//TODO
 }
 public OnClientDisconnect(client)
@@ -173,6 +184,7 @@ public OnMapStart()
     //Cache materials
     PrecacheSound(SOUND_ROUNDSTART, true);
     PrecacheSound(SOUND_STINGER, true);
+    PrecacheSound(SOUND_CHANGED, true);
     PrecacheSound(SOUND_NOPE, true);
 
     g_Model_Vigilante = PrecacheModel("models/playermodels/player1.mdl");
@@ -411,6 +423,32 @@ public Action:Hook_OnWeaponCanUse(client, weapon)
     return Plugin_Continue;
 }
 
+public Action:Hook_OnTakeDamage(victim, &attacker, &inflictor, &Float:damage, &damagetype, &weapon, Float:damageForce[3], Float:damagePosition[3], damagecustom)
+{
+    if(!IsEnabled()) return Plugin_Continue;
+    if(!Client_IsIngame(attacker)) return Plugin_Continue;
+    if(!Client_IsIngame(victim)) return Plugin_Continue;
+    if(attacker == victim) return Plugin_Continue;
+
+
+    //WriteLog("Event_PlayerHurt: %N -> %N inflictor=%N for %f(%d) damage with %d", attacker, victim, inflictor, damage, damagetype, weapon);//TODO
+    if(weapon > 0 && IsHuman(victim) && IsZombie(attacker))
+    {
+        decl String:class[MAX_KEY_LENGTH];
+        GetEntityClassname(weapon, class, sizeof(class));
+        if(StrEqual(class, "weapon_fists"))
+        {
+            //Random chance that you can be infected
+            if(InfectionChanceRoll())
+            {
+                BecomeInfected(victim);
+            }
+        }
+    }
+
+    return Plugin_Continue;
+}
+
 public Action:Hook_OnWeaponSwitchPost(client, weapon)
 {
     //TODO
@@ -496,25 +534,8 @@ public Action:Command_Zombie(client, args)
     Team_GetName(TEAM_HUMAN, tmp, sizeof(tmp));
     WriteLog("TEAM_HUMAN  = %s", tmp);
 
-    Entity_ChangeOverTime(client, 0.1, InfectionStep);
+    BecomeInfected(client);
     return Plugin_Handled;
-}
-
-public bool:InfectionStep(&client, &Float:interval, &currentCall)
-{
-    if(!IsEnabled())
-    if(!Client_IsIngame(client)) return false;
-    if(!IsPlayerAlive(client)) return false;
-    if(!IsHuman(client)) return false;
-    if(GetRoundState() != RoundActive) return false;
-
-    new Float:drunkness = GetEntPropFloat(client, Prop_Send, "m_flDrunkness");
-    drunkness = currentCall * 1.0;
-    SetEntPropFloat(client, Prop_Send, "m_flDrunkness", drunkness);
-
-    WriteLog("%N at %d -> %f", client, currentCall, drunkness);
-
-    return true;
 }
 
 
@@ -912,13 +933,75 @@ stock FoZRoundState:GetRoundState()
     return g_RoundState;
 }
 
+stock bool:InfectionChanceRoll()
+{
+    new humans = Team_GetClientCount(TEAM_HUMAN, CLIENTFILTER_ALIVE);
+    //Last human can't be infected
+    if(humans <= 1) return false;
+
+    new Float:chance = GetConVarFloat(g_Cvar_Infection);
+    chance *= (Float:humans / MAXPLAYERS);
+
+    WriteLog("Hit chance %f", chance);
+
+    return GetURandomFloat() < chance;
+}
+
+stock BecomeInfected(client)
+{
+    Entity_ChangeOverTime(client, 0.1, InfectionStep);
+}
+stock InfectedToZombie(client)
+{
+    StripWeapons(client);
+    JoinZombieTeam(client);
+    Entity_SetModelIndex(client, g_Model_Skeleton);
+    EmitSoundToAll(SOUND_CHANGED, client, SNDCHAN_AUTO, SNDLEVEL_SCREAMING, SND_CHANGEPITCH, SNDVOL_NORMAL, 40);
+    SetEntPropFloat(client, Prop_Send, "m_flDrunkness", 0.0);
+}
+
+public bool:InfectionStep(&client, &Float:interval, &currentCall)
+{
+    //This steps through the process of an infected human to a zombie
+    //Takes 300 steps or 30 seconds
+    if(!IsEnabled()) return false;
+    if(!Client_IsIngame(client)) return false;
+    if(!IsPlayerAlive(client)) return false;
+    if(!IsHuman(client)) return false;
+    if(GetRoundState() != RoundActive) return false;
+
+    //Become drunk 2/3 of the way through
+    if(currentCall > 200)
+    {
+        new Float:drunkness = GetEntPropFloat(client, Prop_Send, "m_flDrunkness");
+        drunkness = currentCall * 1.0;
+        SetEntPropFloat(client, Prop_Send, "m_flDrunkness", drunkness);
+    }
+
+    //All the way through, change client into a zombie
+    if(currentCall > 300)
+    {
+        InfectedToZombie(client);
+        return false;
+    }
+
+    if(GetURandomFloat() < (currentCall / 300.0))
+    {
+        FakeClientCommand(client, "vc 15");
+    }
+
+    WriteLog("%N at %d", client, currentCall);
+
+    return true;
+}
+
 stock RoundEndCheck()
 {
     //Check if any Humans are alive and if not force zombies to win
     //NOTE:  The fof_teamplay entity should be handling this but there are some
     //cases where it does not work.
     if(Team_GetClientCount(TEAM_HUMAN, CLIENTFILTER_ALIVE) <= 0
-        && GetRoundState() == RoundActive)
+            && GetRoundState() == RoundActive)
     {
         AcceptEntityInput(g_Teamplay, "InputDespVictory");
     }
