@@ -489,7 +489,8 @@ public Action:Command_Zombie(client, args)
     WriteLog("TEAM_HUMAN  = %s", tmp);
 
     //BecomeInfected(client);
-    Entity_SetMaxHealth(client, 420);
+    //Entity_SetMaxHealth(client, 420);
+    BecomeGhost(client);
     return Plugin_Handled;
 }
 
@@ -924,6 +925,16 @@ stock RoundEndCheck()
     {
         AcceptEntityInput(g_Teamplay, "InputDespVictory");
     }
+}
+
+stock BecomeGhost(client)
+{
+    Entity_SetModelIndex(client, g_Model_Ghost);
+    StripWeapons(client);
+    SetEntityMoveType(client, MOVETYPE_FLY);
+    SetEntProp(client, Prop_Data, "m_MoveCollide", 1);
+    Entity_SetMaxHealth(client, 25);
+    ChangeEdictState(client);
 }
 
 stock bool:SetGameDescription(String:description[], bool:override = true)
