@@ -65,10 +65,6 @@ new g_Model_Bandido;
 new g_Model_Ranger;
 new g_Model_Ghost;
 new g_Model_Skeleton;
-new g_Model_FistsGhost;
-
-new g_PredictedViewModel[MAXPLAYERS];
-
 
 enum FoZRoundState
 {
@@ -161,7 +157,6 @@ public OnClientPostAdminCheck(client)
 
     SDKHook(client, SDKHook_WeaponCanUse, Hook_OnWeaponCanUse);
     SDKHook(client, SDKHook_OnTakeDamage, Hook_OnTakeDamage);
-    //SDKHook(client, SDKHook_WeaponSwitchPost, Hook_OnWeaponSwitchPost);//TODO
 }
 public OnClientDisconnect(client)
 {
@@ -193,7 +188,6 @@ public OnMapStart()
     g_Model_Ranger = PrecacheModel("models/playermodels/frank.mdl");
     g_Model_Ghost = PrecacheModel("models/npc/ghost.mdl");
     g_Model_Skeleton = PrecacheModel("models/skeleton.mdl");
-    g_Model_FistsGhost = PrecacheModel("models/weapons/v_fists_ghost.mdl");
 
     //Initial setup
     ConvertSpawns();
@@ -222,16 +216,14 @@ public Event_PlayerActivate(Handle:event, const String:name[], bool:dontBroadcas
     if(!IsEnabled()) return;
 }
 
-public Event_PlayerSpawn(Handle:event, const String:name[], bool:dontBroadcast)
+public Action:Event_PlayerSpawn(Handle:event, const String:name[], bool:dontBroadcast)
 {
-    if(!IsEnabled()) return;
+    if(!IsEnabled()) return Plugin_Continue;
 
     new userid = GetEventInt(event, "userid");
-    new client = GetClientOfUserId(userid);
-
-    //g_PredictedViewModel[client] = GetViewModelIndex(client);
-
     RequestFrame(PlayerSpawnDelay, userid);
+
+    return Plugin_Continue;
 }
 
 public Event_PlayerDeath(Handle:event, const String:name[], bool:dontBroadcast)
@@ -281,14 +273,11 @@ public Action:Event_PlayerTeam(Event:event, const String:name[], bool:dontBroadc
     if(!IsEnabled()) return Plugin_Continue;
 
     new userid = GetEventInt(event, "userid");
-    new client = GetClientOfUserId(userid);
     new team   = GetEventInt(event, "team");
-    new oldteam   = GetEventInt(event, "oldteam");
 
     //If A player joins in late as a human force them to be a zombie
     if(team == TEAM_HUMAN && GetRoundState() == RoundActive)
     {
-        WriteLog("-------------blocked %L from joining %d (was %d)", client, team, oldteam);
         RequestFrame(BecomeZombieDelay, userid);
 
         return Plugin_Handled;
@@ -430,8 +419,6 @@ public Action:Hook_OnTakeDamage(victim, &attacker, &inflictor, &Float:damage, &d
     if(!Client_IsIngame(victim)) return Plugin_Continue;
     if(attacker == victim) return Plugin_Continue;
 
-
-    //WriteLog("Event_PlayerHurt: %N -> %N inflictor=%N for %f(%d) damage with %d", attacker, victim, inflictor, damage, damagetype, weapon);//TODO
     if(weapon > 0 && IsHuman(victim) && IsZombie(attacker))
     {
         decl String:class[MAX_KEY_LENGTH];
@@ -448,25 +435,6 @@ public Action:Hook_OnTakeDamage(victim, &attacker, &inflictor, &Float:damage, &d
 
     return Plugin_Continue;
 }
-
-public Action:Hook_OnWeaponSwitchPost(client, weapon)
-{
-    //TODO
-    //Change zombie fists to ghost fists
-    if(IsZombie(client))
-    {
-        decl String:class[MAX_KEY_LENGTH];
-        GetEntityClassname(weapon, class, sizeof(class));
-        if(StrEqual(class, "weapon_fists"))
-        {
-            SetEntProp(weapon, Prop_Send, "m_nModelIndex", 0);
-            SetEntProp(g_PredictedViewModel[client], Prop_Send, "m_nModelIndex", g_Model_FistsGhost);
-        }
-    }
-
-    return Plugin_Continue;
-}
-
 
 public Action:Command_JoinTeam(client, const String:command[], args) 
 { 
@@ -617,8 +585,6 @@ BuildWeightTable(Handle:kv, const String:name[], &Handle:table, &total_weight)
             if(weight > 0)
             {
                 total_weight += weight;
-
-                WriteLog("Add[%s]: %s (%d) (%d)", name, key, weight, total_weight);
             }
         }
         while(KvGotoNextKey(kv));
@@ -641,12 +607,6 @@ SetDefaultConVars()
 RemoveCrates()
 {
     Entity_KillAllByClassName("fof_crate*");
-}
-
-RemoveWeapons()
-{
-    Entity_KillAllByClassName("weapon*");
-    Entity_KillAllByClassName("dynamite*");
 }
 
 //Change all info_player_fof spawn points to a round robin
@@ -707,8 +667,6 @@ ConvertWhiskey(Handle:loot_table, loot_total_weight)
 
         converted = Weapon_Create(loot, origin, angles);
         Entity_AddEFlags(converted, EFL_NO_GAME_PHYSICS_SIMULATION | EFL_DONTBLOCKLOS);
-
-        WriteLog("Whiskey[%d] to %s", count, loot);//TODO
 
         count++;
     }
@@ -942,8 +900,6 @@ stock bool:InfectionChanceRoll()
     new Float:chance = GetConVarFloat(g_Cvar_Infection);
     //chance *= (Float:humans / Float:MAXPLAYERS);
 
-    WriteLog("Hit chance %f", chance);
-
     return GetURandomFloat() < chance;
 }
 
@@ -995,8 +951,6 @@ public bool:InfectionStep(&client, &Float:interval, &currentCall)
     {
         FakeClientCommand(client, "vc 15");
     }
-
-    WriteLog("%N at %d", client, currentCall);
 
     return true;
 }
