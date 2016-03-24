@@ -821,20 +821,6 @@ stock RandomizeModel(client)
     }
 }
 
-stock GetViewModelIndex(client)
-{
-    new ent;
-    while ((ent = FindEntityByClassname(ent, "predicted_viewmodel")) != -1)
-    {
-        new owner = GetEntPropEnt(ent, Prop_Send, "m_hOwner");
-
-        if (owner != client) continue;
-
-        return ent;
-    }
-    return INVALID_ENT_REFERENCE;
-}
-
 stock GetRoundTime()
 {
     return GetConVarInt(g_Cvar_RoundTime);
@@ -872,6 +858,7 @@ stock BecomeInfected(client)
 {
     Entity_ChangeOverTime(client, 0.1, InfectionStep);
 }
+
 stock InfectedToZombie(client)
 {
     StripWeapons(client);
@@ -896,6 +883,7 @@ public bool:InfectionStep(&client, &Float:interval, &currentCall)
     if(!IsPlayerAlive(client)) return false;
     if(!IsHuman(client)) return false;
     if(GetRoundState() != RoundActive) return false;
+    if(Team_GetClientCount(TEAM_HUMAN, CLIENTFILTER_ALIVE) <= 1) return false;
 
     //Become drunk 2/3 of the way through
     if(currentCall > 200)
@@ -912,7 +900,7 @@ public bool:InfectionStep(&client, &Float:interval, &currentCall)
         return false;
     }
 
-    if(currentCall > 170 && GetURandomFloat() < (currentCall / 300.0))
+    if(currentCall > 170 && (2 * GetURandomFloat()) < (currentCall / 300.0))
     {
         FakeClientCommand(client, "vc 15");
     }
@@ -925,8 +913,8 @@ stock RoundEndCheck()
     //Check if any Humans are alive and if not force zombies to win
     //NOTE:  The fof_teamplay entity should be handling this but there are some
     //cases where it does not work.
-    if(Team_GetClientCount(TEAM_HUMAN, CLIENTFILTER_ALIVE) <= 0
-            && GetRoundState() == RoundActive)
+    if(GetRoundState() == RoundActive
+            && Team_GetClientCount(TEAM_HUMAN, CLIENTFILTER_ALIVE) <= 0)
     {
         AcceptEntityInput(g_Teamplay, "InputDespVictory");
     }
