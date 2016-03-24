@@ -414,6 +414,11 @@ public Action:Hook_OnTakeDamage(victim, &attacker, &inflictor, &Float:damage, &d
                 BecomeInfected(victim);
             }
         }
+
+    } else if(IsHuman(victim) && IsHuman(attacker))
+    {
+        //Reduce the damage of friendly fire
+        damage = Float:RoundToCeil(damage / 10.0);
     }
 
     return Plugin_Continue;
@@ -595,7 +600,7 @@ RemoveCrates()
 //info_player_desperado and info_player_vigilante.
 ConvertSpawns()
 {
-    new count = 0;
+    new count = GetRandomInt(0, 1);
     new spawn  = INVALID_ENT_REFERENCE;
     new converted = INVALID_ENT_REFERENCE;
     new Float:origin[3], Float:angles[3];
