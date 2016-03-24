@@ -121,7 +121,7 @@ public OnPluginStart()
 
     g_Cvar_Infection = CreateConVar(
             "foz_infection",
-            "0.25",
+            "0.10",
             "Chance that a human will be infected when punched by a zombie.  Value is scaled such that more human players increase the chance",
             FCVAR_PLUGIN,
             true, 0.01,
