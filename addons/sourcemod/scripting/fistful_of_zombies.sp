@@ -58,7 +58,6 @@ new g_LootTotalWeight;
 
 new g_Teamplay = INVALID_ENT_REFERENCE;
 
-
 new g_Model_Vigilante;
 new g_Model_Desperado;
 new g_Model_Bandido;
@@ -127,8 +126,6 @@ public OnPluginStart()
             true, 0.01,
             true, 1.0);
 
-
-    HookEvent("player_activate", Event_PlayerActivate);
     HookEvent("player_spawn", Event_PlayerSpawn);
     HookEvent("player_death", Event_PlayerDeath);
     HookEvent("round_start", Event_RoundStart);
@@ -139,8 +136,6 @@ public OnPluginStart()
     RegAdminCmd("foz_dump", Command_Dump, ADMFLAG_ROOT, "TEST command");//TODO
 
     AddCommandListener(Command_JoinTeam, "jointeam");
-    //AddCommandListener(Command_JoinTeam, "equipmenu");
-    //AddCommandListener(Command_JoinTeam, "chooseteam");
 
     g_Cvar_TeambalanceAllowed = FindConVar("fof_sv_teambalance_allowed");
     g_Cvar_TeamsUnbalanceLimit = FindConVar("mp_teams_unbalance_limit");
@@ -158,6 +153,7 @@ public OnClientPostAdminCheck(client)
     SDKHook(client, SDKHook_WeaponCanUse, Hook_OnWeaponCanUse);
     SDKHook(client, SDKHook_OnTakeDamage, Hook_OnTakeDamage);
 }
+
 public OnClientDisconnect(client)
 {
     if(!IsEnabled()) return;
@@ -196,11 +192,9 @@ public OnMapStart()
     Team_SetName(TEAM_ZOMBIE, "Zombies");
     Team_SetName(TEAM_HUMAN, "Humans");
 
-    WriteLog("Hit MapStart");
     SetRoundState(RoundPre);
 
     CreateTimer(1.0, Timer_Repeat, .flags = TIMER_REPEAT|TIMER_FLAG_NO_MAPCHANGE);
-
 }
 
 public OnConfigsExecuted()
@@ -209,11 +203,6 @@ public OnConfigsExecuted()
 
     SetGameDescription(GAME_DESCRIPTION);
     SetDefaultConVars();
-}
-
-public Event_PlayerActivate(Handle:event, const String:name[], bool:dontBroadcast)
-{
-    if(!IsEnabled()) return;
 }
 
 public Action:Event_PlayerSpawn(Handle:event, const String:name[], bool:dontBroadcast)
@@ -233,7 +222,6 @@ public Event_PlayerDeath(Handle:event, const String:name[], bool:dontBroadcast)
     new userid = GetEventInt(event, "userid");
     new client = GetClientOfUserId(userid);
 
-
     //A dead human becomes a zombie
     if(IsHuman(client))
     {
@@ -249,7 +237,6 @@ public Event_RoundStart(Event:event, const String:name[], bool:dontBroadcast)
 {
     if(!IsEnabled()) return;
 
-    WriteLog("Hit RoundStart");
     SetRoundState(RoundGrace);
     CreateTimer(10.0, Timer_EndGrace, TIMER_FLAG_NO_MAPCHANGE);  
 
@@ -264,7 +251,6 @@ public Event_RoundEnd(Event:event, const String:name[], bool:dontBroadcast)
 {
     if(!IsEnabled()) return;
 
-    WriteLog("Hit RoundEnd");
     SetRoundState(RoundEnd);
 }
 
@@ -279,12 +265,10 @@ public Action:Event_PlayerTeam(Event:event, const String:name[], bool:dontBroadc
     if(team == TEAM_HUMAN && GetRoundState() == RoundActive)
     {
         RequestFrame(BecomeZombieDelay, userid);
-
         return Plugin_Handled;
     }
 
     return Plugin_Continue;
-
 }
 
 public PlayerSpawnDelay(any:userid)
@@ -359,7 +343,6 @@ public Action:Timer_GiveSecondaryWeapon(Handle:timer, any:userid)
 
 public Action:Timer_EndGrace(Handle:timer)
 {
-    WriteLog("Hit EndGrace");
     SetRoundState(RoundActive);
 }
 
@@ -443,8 +426,6 @@ public Action:Command_JoinTeam(client, const String:command[], args)
 
     decl String:cmd[32];
     GetCmdArg(1, cmd, sizeof(cmd));
-
-    WriteLog("Hit JoinTeam (%N -> %s)", client, cmd);
 
     if(GetRoundState() == RoundActive)
     {
@@ -676,9 +657,8 @@ ConvertWhiskey(Handle:loot_table, loot_total_weight)
 SpawnZombieTeamplay()
 {
     new String:tmp[512];
-
-
     new ent = CreateEntityByName("fof_teamplay");
+
     if(IsValidEntity(ent))
     {
         DispatchKeyValue(ent, "targetname", "tpzombie");
@@ -789,21 +769,6 @@ stock bool:GetRandomValueFromTable(Handle:table, total_weight, String:value[], l
     return false;
 }
 
-stock GiveInitialGear(client)
-{
-    new String:weapon[MAX_KEY_LENGTH];
-
-    GetRandomValueFromTable(g_GearSecondaryTable, g_GearSecondaryTotalWeight, weapon, sizeof(weapon));
-    GivePlayerItem(client, weapon);
-    PrintToChat(client, "Given %s", weapon);
-    //UseWeapon(client, weapon, true);
-
-    GetRandomValueFromTable(g_GearPrimaryTable, g_GearPrimaryTotalWeight, weapon, sizeof(weapon));
-    GivePlayerItem(client, weapon);
-    PrintToChat(client, "Given %s", weapon);
-    UseWeapon(client, weapon);
-}
-
 stock UseWeapon(client, const String:weapon[], bool second=false)
 {
     new String:tmp[MAX_KEY_LENGTH];
@@ -834,7 +799,7 @@ stock RandomizeModel(client)
 {
     new model;
 
-    if(IsZombie(client))
+    if(IsHuman(client))
     {
         model = GetRandomInt(0, 3);
         switch (model)
