@@ -483,7 +483,8 @@ public Action:Command_Zombie(client, args)
     Team_GetName(TEAM_HUMAN, tmp, sizeof(tmp));
     WriteLog("TEAM_HUMAN  = %s", tmp);
 
-    BecomeInfected(client);
+    //BecomeInfected(client);
+    Entity_SetMaxHealth(client, 420);
     return Plugin_Handled;
 }
 
