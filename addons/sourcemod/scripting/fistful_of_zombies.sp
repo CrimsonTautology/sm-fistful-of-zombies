@@ -18,7 +18,7 @@
 #undef REQUIRE_EXTENSIONS
 #tryinclude <steamworks>
 
-#define PLUGIN_VERSION		"1.0.1"
+#define PLUGIN_VERSION		"1.0.2"
 #define PLUGIN_NAME         "[FoF] Fistful Of Zombies"
 #define DEBUG				true
 
@@ -281,6 +281,8 @@ public PlayerSpawnDelay(any:userid)
 
     if(IsHuman(client))
     {
+        RandomizeModel(client);
+
         //If a player spawns as human give them their primary and secondary gear
         CreateTimer(0.2, Timer_GiveSecondaryWeapon, userid, TIMER_FLAG_NO_MAPCHANGE);  
         CreateTimer(0.3, Timer_GivePrimaryWeapon, userid, TIMER_FLAG_NO_MAPCHANGE);  
