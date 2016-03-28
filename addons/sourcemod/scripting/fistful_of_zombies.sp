@@ -242,6 +242,7 @@ public Event_RoundStart(Event:event, const String:name[], bool:dontBroadcast)
 
     ConvertWhiskey(g_LootTable, g_LootTotalWeight);
     RemoveCrates();
+    RemoveTeamplayEntities();
     RandomizeTeams();
     SetDefaultConVars();
 }
@@ -597,6 +598,11 @@ SetDefaultConVars()
 RemoveCrates()
 {
     Entity_KillAllByClassName("fof_crate*");
+}
+
+RemoveTeamplayEntities()
+{
+    Entity_KillAllByClassName("fof_buyzone");
 }
 
 //Change all info_player_fof spawn points to a round robin
