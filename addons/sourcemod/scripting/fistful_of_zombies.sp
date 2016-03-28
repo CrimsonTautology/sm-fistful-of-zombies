@@ -33,8 +33,8 @@
 #define SOUND_CHANGED       "player/fallscream2.wav"
 #define SOUND_NOPE          "player/voice/no_no1.wav"
 
-#define TEAM_ZOMBIE         3   //Desperados
-#define TEAM_HUMAN          2   //Vigilantes
+#define TEAM_ZOMBIE         2   //Vigilantes
+#define TEAM_HUMAN          3   //Desperados
 
 new Handle:g_Cvar_Enabled = INVALID_HANDLE;
 new Handle:g_Cvar_Config = INVALID_HANDLE;
@@ -688,9 +688,9 @@ SpawnZombieTeamplay()
         DispatchKeyValue(ent, "OnTimerEnd",      tmp);
         DispatchKeyValue(ent, "OnTimerEnd",      "!self,InputRespawnPlayers,-2,0,-1");
 
-        DispatchKeyValue(ent, "OnRoundTimeEnd",  "!self,InputVigVictory,,0,-1");
-        DispatchKeyValue(ent, "OnNoDespAlive",   "!self,InputRespawnPlayers,-2,0,-1");
-        DispatchKeyValue(ent, "OnNoVigAlive",    "!self,InputDespVictory,,0,-1");
+        DispatchKeyValue(ent, "OnRoundTimeEnd",  "!self,InputDespVictory,,0,-1");
+        DispatchKeyValue(ent, "OnNoVigAlive",   "!self,InputRespawnPlayers,-2,0,-1");
+        DispatchKeyValue(ent, "OnNoDespAlive",    "!self,InputVigVictory,,0,-1");
 
     }
 
@@ -713,9 +713,9 @@ SpawnZombieTeamplay()
         DispatchKeyValue(ent, "OnTimerEnd",      tmp);
         DispatchKeyValue(ent, "OnTimerEnd",      "!self,InputRespawnPlayers,-2,0,-1");
 
-        DispatchKeyValue(ent, "OnRoundTimeEnd",  "!self,InputVigVictory,,0,-1");
-        DispatchKeyValue(ent, "OnNoDespAlive",   "!self,InputRespawnPlayers,-2,0,-1");
-        DispatchKeyValue(ent, "OnNoVigAlive",    "!self,InputDespVictory,,0,-1");
+        DispatchKeyValue(ent, "OnRoundTimeEnd",  "!self,InputDespVictory,,0,-1");
+        DispatchKeyValue(ent, "OnNoVigAlive",   "!self,InputRespawnPlayers,-2,0,-1");
+        DispatchKeyValue(ent, "OnNoDespAlive",    "!self,InputVigVictory,,0,-1");
 
         DispatchSpawn(ent);
         ActivateEntity(ent);
@@ -953,7 +953,7 @@ stock RoundEndCheck()
     if(GetRoundState() == RoundActive
             && Team_GetClientCount(TEAM_HUMAN, CLIENTFILTER_ALIVE) <= 0)
     {
-        AcceptEntityInput(g_Teamplay, "InputDespVictory");
+        AcceptEntityInput(g_Teamplay, "InputVigVictory");
     }
 }
 
