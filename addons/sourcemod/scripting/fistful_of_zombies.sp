@@ -672,15 +672,37 @@ ConvertWhiskey(Handle:loot_table, loot_total_weight)
 SpawnZombieTeamplay()
 {
     new String:tmp[512];
-    new ent = CreateEntityByName("fof_teamplay");
 
+    //First check if an fof_teamplay already exists
+    new ent = FindEntityByClassname(INVALID_ENT_REFERENCE, "fof_teamplay");
     if(IsValidEntity(ent))
     {
+        DispatchKeyValue(ent, "RespawnSystem", "1");
+
+        //Todo, cvar ExtraTime and RoundTime
+        Format(tmp, sizeof(tmp),                 "!self,RoundTime,%d,0,-1", GetRoundTime());
+        DispatchKeyValue(ent, "OnNewRound",      tmp);
+        DispatchKeyValue(ent, "OnNewRound",      "!self,ExtraTime,15,0.1,-1");
+
+        Format(tmp, sizeof(tmp),                 "!self,ExtraTime,%d,0,-1", GetRespawnTime());
+        DispatchKeyValue(ent, "OnTimerEnd",      tmp);
+        DispatchKeyValue(ent, "OnTimerEnd",      "!self,InputRespawnPlayers,-2,0,-1");
+
+        DispatchKeyValue(ent, "OnRoundTimeEnd",  "!self,InputVigVictory,,0,-1");
+        DispatchKeyValue(ent, "OnNoDespAlive",   "!self,InputRespawnPlayers,-2,0,-1");
+        DispatchKeyValue(ent, "OnNoVigAlive",    "!self,InputDespVictory,,0,-1");
+
+    }
+
+    //If not create one
+    else if(!IsValidEntity(ent))
+    {
+        ent = CreateEntityByName("fof_teamplay");
         DispatchKeyValue(ent, "targetname", "tpzombie");
 
         DispatchKeyValue(ent, "RoundBased", "1");
         DispatchKeyValue(ent, "RespawnSystem", "1");
-        DispatchKeyValue(ent, "SwitchTeams", "1");
+        //DispatchKeyValue(ent, "SwitchTeams", "1");
 
         //Todo, cvar ExtraTime and RoundTime
         Format(tmp, sizeof(tmp),                 "!self,RoundTime,%d,0,-1", GetRoundTime());
