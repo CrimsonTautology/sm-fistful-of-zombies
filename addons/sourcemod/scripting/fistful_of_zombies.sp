@@ -49,9 +49,11 @@ new Handle:g_Cvar_Autoteambalance = INVALID_HANDLE;
 
 new Handle:g_GearPrimaryTable = INVALID_HANDLE;
 new g_GearPrimaryTotalWeight;
+new bool:g_GivenPrimary[MAXPLAYERS] = {false, ...};
 
 new Handle:g_GearSecondaryTable = INVALID_HANDLE;
 new g_GearSecondaryTotalWeight;
+new bool:g_GivenSecondary[MAXPLAYERS] = {false, ...};
 
 new Handle:g_LootTable = INVALID_HANDLE;
 new g_LootTotalWeight;
@@ -280,6 +282,9 @@ public PlayerSpawnDelay(any:userid)
     if(!Client_IsIngame(client)) return;
     if(!IsPlayerAlive(client)) return;
 
+    g_GivenPrimary[client] = false;
+    g_GivenSecondary[client] = false;
+
     if(IsHuman(client))
     {
         RandomizeModel(client);
@@ -316,12 +321,15 @@ public Action:Timer_GivePrimaryWeapon(Handle:timer, any:userid)
     if(!IsEnabled()) return Plugin_Handled;
     if(!Client_IsIngame(client)) return Plugin_Handled;
     if(IsZombie(client)) return Plugin_Handled;
+    if(g_GivenPrimary[client]) return Plugin_Handled;
     new String:weapon[MAX_KEY_LENGTH];
 
     GetRandomValueFromTable(g_GearPrimaryTable, g_GearPrimaryTotalWeight, weapon, sizeof(weapon));
     GivePlayerItem(client, weapon);
     PrintToChat(client, "Given %s", weapon);
     UseWeapon(client, weapon);
+
+    g_GivenPrimary[client] = true;
 
     return Plugin_Handled;
 }
@@ -333,6 +341,7 @@ public Action:Timer_GiveSecondaryWeapon(Handle:timer, any:userid)
     if(!IsEnabled()) return Plugin_Handled;
     if(!Client_IsIngame(client)) return Plugin_Handled;
     if(IsZombie(client)) return Plugin_Handled;
+    if(g_GivenSecondary[client]) return Plugin_Handled;
 
     new String:weapon[MAX_KEY_LENGTH];
 
@@ -340,6 +349,8 @@ public Action:Timer_GiveSecondaryWeapon(Handle:timer, any:userid)
     GivePlayerItem(client, weapon);
     PrintToChat(client, "Given %s", weapon);
     UseWeapon(client, weapon, true);
+
+    g_GivenSecondary[client] = true;
 
     return Plugin_Handled;
 }
