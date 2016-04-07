@@ -1799,7 +1799,7 @@ public Action:__smlib_Timer_ChangeOverTime(Handle:Timer, Handle:dataPack)
 	new entity = EntRefToEntIndex(ReadPackCell(dataPack));
 	if(!Entity_IsValid(entity)){
         CloseHandle(dataPack);
-		return Plugin_Stop;
+        return Plugin_Stop;
 	}
 	
 	new Float:interval = ReadPackFloat(dataPack);
@@ -1819,7 +1819,7 @@ public Action:__smlib_Timer_ChangeOverTime(Handle:Timer, Handle:dataPack)
 	
 	if(result == false){
         CloseHandle(dataPack);
-		return Plugin_Stop;
+        return Plugin_Stop;
 	}
 	
 	ResetPack(dataPack,true);

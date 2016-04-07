@@ -264,6 +264,8 @@ public Action:Event_PlayerTeam(Event:event, const String:name[], bool:dontBroadc
     new userid = GetEventInt(event, "userid");
     new team   = GetEventInt(event, "team");
 
+    SetEventBroadcast(event, true);
+
     //If A player joins in late as a human force them to be a zombie
     if(team == TEAM_HUMAN && GetRoundState() == RoundActive)
     {
