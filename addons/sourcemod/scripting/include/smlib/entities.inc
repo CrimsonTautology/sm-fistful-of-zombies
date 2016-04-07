@@ -1798,6 +1798,7 @@ public Action:__smlib_Timer_ChangeOverTime(Handle:Timer, Handle:dataPack)
 {
 	new entity = EntRefToEntIndex(ReadPackCell(dataPack));
 	if(!Entity_IsValid(entity)){
+        CloseHandle(dataPack);
 		return Plugin_Stop;
 	}
 	
@@ -1817,6 +1818,7 @@ public Action:__smlib_Timer_ChangeOverTime(Handle:Timer, Handle:dataPack)
 	Call_Finish(result);
 	
 	if(result == false){
+        CloseHandle(dataPack);
 		return Plugin_Stop;
 	}
 	
