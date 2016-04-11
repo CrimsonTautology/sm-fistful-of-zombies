@@ -524,19 +524,19 @@ public Action:Command_Dump(caller, args)
     PrintToConsole(caller, "RoundState: %d", g_RoundState);
     PrintToConsole(caller, "TEAM_ZOMBIE: %d, TEAM_HUMAN: %d", TEAM_ZOMBIE, TEAM_HUMAN);
     PrintToConsole(caller, "---------------------------------");
-    PrintToConsole(caller, "team          health user");
+    PrintToConsole(caller, "team          health pri user");
     for (new client=1; client <= MaxClients; client++)
     {
-        if(!IsClientInGame(client) || IsFakeClient(client))
-            continue;
+        if(!IsClientInGame(client)) continue;
 
         team = GetClientTeam(client);
         health = Entity_GetHealth(client);
         Team_GetName(team, tmp, sizeof(tmp));
         
-        PrintToConsole(caller, "%13s %6d %L",
+        PrintToConsole(caller, "%13s %6d %3d %L",
                 tmp,
                 health,
+                g_HumanPriority[client],
                 client
                 );
     }
