@@ -993,8 +993,8 @@ stock BecomeGhost(client)
 
 public Sort_HumanPriority(elem1, elem2, const array[], Handle:hndl)
 {
-    if(g_HumanPriority[elem1] < g_HumanPriority[elem2]) return -1;
-    if(g_HumanPriority[elem1] > g_HumanPriority[elem2]) return  1;
+    if(g_HumanPriority[elem1] < g_HumanPriority[elem2]) return  1;
+    if(g_HumanPriority[elem1] > g_HumanPriority[elem2]) return  -1;
 
     return GetURandomFloat() < 0.5 ? 1 : -1;  
 }
