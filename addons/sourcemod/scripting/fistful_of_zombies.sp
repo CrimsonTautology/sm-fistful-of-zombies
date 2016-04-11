@@ -67,6 +67,10 @@ new g_Model_Ranger;
 new g_Model_Ghost;
 new g_Model_Skeleton;
 
+//A priority scaling for assigning to the human team;  a higher value has a
+//higher priority for joining humans.
+new g_HumanPriority[MAXPLAYERS] = {0, ...};
+
 enum FoZRoundState
 {
   RoundPre,
@@ -154,6 +158,8 @@ public OnClientPostAdminCheck(client)
 
     SDKHook(client, SDKHook_WeaponCanUse, Hook_OnWeaponCanUse);
     SDKHook(client, SDKHook_OnTakeDamage, Hook_OnTakeDamage);
+
+    g_HumanPriority[client] = 0;
 }
 
 public OnClientDisconnect(client)
@@ -765,10 +771,10 @@ stock JoinZombieTeam(client)
 stock RandomizeTeams()
 {
     decl clients[MAXPLAYERS];
-    new client_count = 0, human_count;
+    new client_count = 0, human_count, client;
     new Float:ratio = GetConVarFloat(g_Cvar_Ratio);
 
-    for(new client = 1; client <= MaxClients; client++)
+    for(client = 1; client <= MaxClients; client++)
     {
         if(!IsClientInGame(client)) continue;
         if(!( IsZombie(client) || IsHuman(client) )) continue;
@@ -777,20 +783,25 @@ stock RandomizeTeams()
         client_count++;
     }
 
-    SortIntegers(clients, client_count, Sort_Random);
+    //SortIntegers(clients, client_count, Sort_Random);
+    SortCustom1D(clients, client_count, Sort_HumanPriority);
 
     //Calculate number of humans;  need at least one
     human_count = RoundToFloor(client_count * ratio);
     if(human_count == 0 && client_count > 0) human_count = 1;
 
-    //Assign teams
+    //Assign teams; modify priority for next round
     for(new i = 0; i < human_count; i++)
     {
-        JoinHumanTeam(clients[i]);
+        client = clients[i];
+        JoinHumanTeam(client);
+        g_HumanPriority[client]--;
     }
     for(new i = human_count; i < client_count; i++)
     {
+        client = clients[i];
         JoinZombieTeam(clients[i]);
+        g_HumanPriority[client]++;
     }
 }
 
@@ -978,6 +989,14 @@ stock BecomeGhost(client)
     SetEntProp(client, Prop_Data, "m_MoveCollide", 1);
     Entity_SetMaxHealth(client, 25);
     ChangeEdictState(client);
+}
+
+public Sort_HumanPriority(elem1, elem2, const array[], Handle:hndl)
+{
+    if(g_HumanPriority[elem1] < g_HumanPriority[elem2]) return -1;
+    if(g_HumanPriority[elem1] > g_HumanPriority[elem2]) return  1;
+
+    return GetURandomFloat() < 0.5 ? 1 : -1;  
 }
 
 stock bool:SetGameDescription(String:description[], bool:override = true)
