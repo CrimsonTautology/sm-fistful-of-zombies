@@ -333,8 +333,7 @@ public Action:Timer_GivePrimaryWeapon(Handle:timer, any:userid)
     new String:weapon[MAX_KEY_LENGTH];
 
     GetRandomValueFromTable(g_GearPrimaryTable, g_GearPrimaryTotalWeight, weapon, sizeof(weapon));
-    GivePlayerItem(client, weapon);
-    UseWeapon(client, weapon);
+    Client_GiveWeapon(client, weapon, true);
 
     g_GivenPrimary[client] = true;
 
@@ -353,7 +352,7 @@ public Action:Timer_GiveSecondaryWeapon(Handle:timer, any:userid)
     new String:weapon[MAX_KEY_LENGTH];
 
     GetRandomValueFromTable(g_GearSecondaryTable, g_GearSecondaryTotalWeight, weapon, sizeof(weapon));
-    GivePlayerItem(client, weapon);
+    Client_GiveWeapon(client, weapon, false);
     UseWeapon(client, weapon, true);
 
     g_GivenSecondary[client] = true;
