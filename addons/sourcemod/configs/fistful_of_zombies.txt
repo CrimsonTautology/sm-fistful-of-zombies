@@ -41,7 +41,7 @@ fistful_of_zombies
         weapon_sawedoff_shotgun { weight 12 }
         weapon_volcanic { weight 12 }
 
-        weapon_navy { weight 8 }
+        weapon_coltnavy { weight 8 }
         weapon_bow { weight 8 }
 
         weapon_schofield { weight 2 }
