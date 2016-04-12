@@ -334,7 +334,6 @@ public Action:Timer_GivePrimaryWeapon(Handle:timer, any:userid)
 
     GetRandomValueFromTable(g_GearPrimaryTable, g_GearPrimaryTotalWeight, weapon, sizeof(weapon));
     GivePlayerItem(client, weapon);
-    PrintToChat(client, "Given %s", weapon);
     UseWeapon(client, weapon);
 
     g_GivenPrimary[client] = true;
@@ -355,7 +354,6 @@ public Action:Timer_GiveSecondaryWeapon(Handle:timer, any:userid)
 
     GetRandomValueFromTable(g_GearSecondaryTable, g_GearSecondaryTotalWeight, weapon, sizeof(weapon));
     GivePlayerItem(client, weapon);
-    PrintToChat(client, "Given %s", weapon);
     UseWeapon(client, weapon, true);
 
     g_GivenSecondary[client] = true;
