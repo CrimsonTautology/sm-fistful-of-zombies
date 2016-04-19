@@ -261,6 +261,7 @@ public Event_RoundEnd(Event:event, const String:name[], bool:dontBroadcast)
     if(!IsEnabled()) return;
 
     SetRoundState(RoundEnd);
+    RewardSurvivingHumans();
 }
 
 public Action:Event_PlayerTeam(Event:event, const String:name[], bool:dontBroadcast)
@@ -995,6 +996,22 @@ public Sort_HumanPriority(elem1, elem2, const array[], Handle:hndl)
     if(g_HumanPriority[elem1] > g_HumanPriority[elem2]) return  -1;
 
     return GetURandomFloat() < 0.5 ? 1 : -1;  
+}
+
+public RewardSurvivingHumans()
+{
+    //Called at round end to give rewards to surviving humans.  Currently used
+    //to pump their priority by one so they have a better chance to be human
+    //next round.
+
+    for(new client = 0; client < MaxClients; client++)
+    {
+        if(!Client_IsIngame(client)) continue;
+        if(!IsPlayerAlive(client)) continue;
+        if(!IsHuman(client)) continue;
+
+        g_HumanPriority[client]++;
+    }
 }
 
 stock bool:SetGameDescription(String:description[], bool:override = true)

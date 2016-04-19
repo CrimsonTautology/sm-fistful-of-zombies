@@ -17,10 +17,9 @@ fistful_of_zombies
         weapon_carbine { weight 9 }
 
         weapon_maresleg { weight 8 }
-        //weapon_dynamite { weight 8 } 
+        weapon_dynamite_belt { weight 8 } 
         weapon_henryrifle { weight 8 }
 
-        //weapon_dynamite_black { weight 6 }
         weapon_peacemaker { weight 6 }
         weapon_coachgun { weight 6 }
 
@@ -59,7 +58,7 @@ fistful_of_zombies
         weapon_axe { weight 8 }
 
         weapon_whiskey { weight 4 }
-        weapon_dynamite_black { weight 4 }
+        weapon_dynamite_belt { weight 4 }
         weapon_deringer { weight 4 }
 
         weapon_volcanic { weight 2 }
