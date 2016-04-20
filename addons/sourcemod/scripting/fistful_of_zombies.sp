@@ -971,7 +971,7 @@ public bool:InfectionStep(&client, &Float:interval, &currentCall)
         return false;
     }
 
-    if(currentCall > 170 && (2 * GetURandomFloat()) < (currentCall / 300.0))
+    if(currentCall > 250 && (2 * GetURandomFloat()) < (currentCall / 300.0))
     {
         FakeClientCommand(client, "vc 15");
     }
