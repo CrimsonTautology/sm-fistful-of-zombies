@@ -33,8 +33,15 @@
 #define SOUND_CHANGED       "player/fallscream2.wav"
 #define SOUND_NOPE          "player/voice/no_no1.wav"
 
-#define TEAM_HUMAN          2   //Vigilantes
-#define TEAM_ZOMBIE         3   //Desperados
+#define TEAM_HUMAN              2   //Vigilantes
+#define INFO_PLAYER_HUMAN       "info_player_vigilante"
+#define ON_NO_HUMAN_ALIVE       "OnNoVigAlive"
+#define INPUT_HUMAN_VICTORY     "InputVigVictory"
+
+#define TEAM_ZOMBIE             3   //Desperados
+#define INFO_PLAYER_ZOMBIE      "info_player_desperado"
+#define ON_NO_ZOMBIE_ALIVE      "OnNoDespAlive"
+#define INPUT_ZOMBIE_VICTORY    "InputDespVictory"
 
 new Handle:g_Cvar_Enabled = INVALID_HANDLE;
 new Handle:g_Cvar_Config = INVALID_HANDLE;
@@ -641,8 +648,8 @@ ConvertSpawns()
 
         //Spawn a replacement at the same position
         converted = count % 2 == 0
-            ? Entity_Create("info_player_vigilante")
-            : Entity_Create("info_player_desperado")
+            ? Entity_Create(INFO_PLAYER_HUMAN)
+            : Entity_Create(INFO_PLAYER_ZOMBIE)
             ;
         if(IsValidEntity(converted))
         {
@@ -706,9 +713,11 @@ SpawnZombieTeamplay()
         DispatchKeyValue(ent, "OnTimerEnd",      tmp);
         DispatchKeyValue(ent, "OnTimerEnd",      "!self,InputRespawnPlayers,-2,0,-1");
 
-        DispatchKeyValue(ent, "OnRoundTimeEnd",  "!self,InputVigVictory,,0,-1");
-        DispatchKeyValue(ent, "OnNoDespAlive",   "!self,InputRespawnPlayers,-2,0,-1");
-        DispatchKeyValue(ent, "OnNoVigAlive",    "!self,InputDespVictory,,0,-1");
+        Format(tmp, sizeof(tmp),                 "!self,%s,,0,-1", INPUT_HUMAN_VICTORY);
+        DispatchKeyValue(ent, "OnRoundTimeEnd",  tmp);
+        DispatchKeyValue(ent, ON_NO_ZOMBIE_ALIVE,   "!self,InputRespawnPlayers,-2,0,-1");
+        Format(tmp, sizeof(tmp),                 "!self,%s,,0,-1", INPUT_ZOMBIE_VICTORY);
+        DispatchKeyValue(ent, ON_NO_HUMAN_ALIVE, tmp);
 
     }
 
@@ -731,9 +740,11 @@ SpawnZombieTeamplay()
         DispatchKeyValue(ent, "OnTimerEnd",      tmp);
         DispatchKeyValue(ent, "OnTimerEnd",      "!self,InputRespawnPlayers,-2,0,-1");
 
-        DispatchKeyValue(ent, "OnRoundTimeEnd",  "!self,InputVigVictory,,0,-1");
-        DispatchKeyValue(ent, "OnNoDespAlive",   "!self,InputRespawnPlayers,-2,0,-1");
-        DispatchKeyValue(ent, "OnNoVigAlive",    "!self,InputDespVictory,,0,-1");
+        Format(tmp, sizeof(tmp),                 "!self,%s,,0,-1", INPUT_HUMAN_VICTORY);
+        DispatchKeyValue(ent, "OnRoundTimeEnd",  tmp);
+        DispatchKeyValue(ent, ON_NO_ZOMBIE_ALIVE,   "!self,InputRespawnPlayers,-2,0,-1");
+        Format(tmp, sizeof(tmp),                 "!self,%s,,0,-1", INPUT_ZOMBIE_VICTORY);
+        DispatchKeyValue(ent, ON_NO_HUMAN_ALIVE, tmp);
 
         DispatchSpawn(ent);
         ActivateEntity(ent);
@@ -976,7 +987,7 @@ stock RoundEndCheck()
     if(GetRoundState() == RoundActive
             && Team_GetClientCount(TEAM_HUMAN, CLIENTFILTER_ALIVE) <= 0)
     {
-        AcceptEntityInput(g_Teamplay, "InputDespVictory");
+        AcceptEntityInput(g_Teamplay, INPUT_ZOMBIE_VICTORY);
     }
 }
 
