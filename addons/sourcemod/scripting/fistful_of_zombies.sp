@@ -204,8 +204,8 @@ public OnMapStart()
     ConvertSpawns();
     ConvertWhiskey(g_LootTable, g_LootTotalWeight);
     g_Teamplay = SpawnZombieTeamplay();
-    Team_SetName(TEAM_ZOMBIE, "Zombies");
-    Team_SetName(TEAM_HUMAN, "Humans");
+    //Team_SetName(TEAM_ZOMBIE, "Zombies");
+    //Team_SetName(TEAM_HUMAN, "Humans");
 
     SetRoundState(RoundPre);
 
