@@ -12,6 +12,8 @@ fistful_of_zombies
         weapon_volcanic { weight 11 }
         weapon_bow { weight 11 }
 
+        weapon_remington_army { weight 10 }
+
         weapon_axe { weight 9 }
         weapon_schofield { weight 9 }
         weapon_carbine { weight 9 }
@@ -42,6 +44,8 @@ fistful_of_zombies
 
         weapon_coltnavy { weight 8 }
         weapon_bow { weight 8 }
+
+        weapon_remington_army { weight 4 }
 
         weapon_schofield { weight 2 }
         weapon_maresleg { weight 2 }
