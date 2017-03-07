@@ -73,6 +73,7 @@ new g_Model_Bandido;
 new g_Model_Ranger;
 new g_Model_Ghost;
 new g_Model_Skeleton;
+new g_Model_Zombie;
 
 //A priority scaling for assigning to the human team;  a higher value has a
 //higher priority for joining humans.
@@ -199,6 +200,7 @@ public OnMapStart()
     g_Model_Ranger = PrecacheModel("models/playermodels/frank.mdl");
     g_Model_Ghost = PrecacheModel("models/npc/ghost.mdl");
     g_Model_Skeleton = PrecacheModel("models/skeleton.mdl");
+    g_Model_Zombie = PrecacheModel("models/zombies/fof_zombie.mdl");
 
     //Initial setup
     ConvertSpawns();
@@ -313,7 +315,7 @@ public PlayerSpawnDelay(any:userid)
     } else if(IsZombie(client))
     {
         //Force client model
-        Entity_SetModelIndex(client, g_Model_Skeleton);
+        Entity_SetModelIndex(client, g_Model_Zombie);
         StripWeapons(client);
 
         PrintCenterText(client, "Ughhhh..... BRAINNNSSSS"); 
@@ -883,11 +885,12 @@ stock RandomizeModel(client)
 
     } else if(IsZombie(client))
     {
-        model = GetRandomInt(0, 1);
+        model = GetRandomInt(0, 2);
         switch (model)
         {
             case 0: { Entity_SetModelIndex(client, g_Model_Ghost); }
             case 1: { Entity_SetModelIndex(client, g_Model_Skeleton); }
+            case 2: { Entity_SetModelIndex(client, g_Model_Zombie); }
         }
     }
 }
@@ -936,7 +939,7 @@ stock InfectedToZombie(client)
     UseWeapon(client, "weapon_fists");
 
     JoinZombieTeam(client);
-    Entity_SetModelIndex(client, g_Model_Skeleton);
+    Entity_SetModelIndex(client, g_Model_Zombie);
 
     EmitSoundToAll(SOUND_CHANGED, client, SNDCHAN_AUTO, SNDLEVEL_SCREAMING, SND_CHANGEPITCH, SNDVOL_NORMAL, 40);
     SetEntPropFloat(client, Prop_Send, "m_flDrunkness", 0.0);
