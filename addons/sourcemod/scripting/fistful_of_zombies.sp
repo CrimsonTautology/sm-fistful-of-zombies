@@ -18,7 +18,7 @@
 #undef REQUIRE_EXTENSIONS
 #tryinclude <steamworks>
 
-#define PLUGIN_VERSION		"1.0.2"
+#define PLUGIN_VERSION		"1.1.0"
 #define PLUGIN_NAME         "[FoF] Fistful Of Zombies"
 #define DEBUG				true
 
