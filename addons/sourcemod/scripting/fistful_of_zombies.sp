@@ -181,6 +181,7 @@ public OnMapStart()
 
     //Load configuration
     decl String:file[PLATFORM_MAX_PATH];
+    decl String:tmp[PLATFORM_MAX_PATH];
     GetConVarString(g_Cvar_Config, file, sizeof(file));
     LoadFOZFile(file,
             g_GearPrimaryTable, g_GearPrimaryTotalWeight,
@@ -193,6 +194,12 @@ public OnMapStart()
     PrecacheSound(SOUND_STINGER, true);
     PrecacheSound(SOUND_CHANGED, true);
     PrecacheSound(SOUND_NOPE, true);
+
+    //Precache zombie sounds
+    for (new i=1; i<=3; i++) {
+        Format(tmp, sizeof(tmp), "npc/zombie/foot%d.wav", i);
+        PrecacheSound(tmp, true);
+    }
 
     g_Model_Vigilante = PrecacheModel("models/playermodels/player1.mdl");
     g_Model_Desperado = PrecacheModel("models/playermodels/player2.mdl");
@@ -492,6 +499,13 @@ public Action:SoundCallback(clients[64], &numClients, String:sample[PLATFORM_MAX
         //Change the voice of zombie players
         if(IsZombie(entity))
         {
+            //Change to zombie footsteps
+            if(StrContains(sample, "player/footsteps") == 0)
+            {
+                Format(sample, sizeof(sample), "npc/zombie/foot%d.wav", GetRandomInt(1, 3));
+                return Plugin_Changed;
+            }
+
             if(StrContains(sample, "player/voice") == 0 || StrContains(sample, "npc/mexican") == 0)
             {
                 pitch = 40;
