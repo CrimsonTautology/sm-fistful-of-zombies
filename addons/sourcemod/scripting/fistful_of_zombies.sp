@@ -211,6 +211,11 @@ public OnMapStart()
         PrecacheSound(tmp, true);
     }
 
+    for (new i=1; i<=4; i++) {
+        Format(tmp, sizeof(tmp), "npc/zombie/moan_loop%d.wav", i);
+        PrecacheSound(tmp, true);
+    }
+
     g_Model_Vigilante = PrecacheModel("models/playermodels/player1.mdl");
     g_Model_Desperado = PrecacheModel("models/playermodels/player2.mdl");
     g_Model_Bandido = PrecacheModel("models/playermodels/bandito.mdl");
@@ -329,13 +334,16 @@ public PlayerSpawnDelay(any:userid)
         CreateTimer(0.3, Timer_GivePrimaryWeapon, userid, TIMER_FLAG_NO_MAPCHANGE);  
 
         PrintCenterText(client, "Survive the zombie plague!"); 
+
     } else if(IsZombie(client))
     {
         //Force client model
         Entity_SetModelIndex(client, g_Model_Zombie);
         StripWeapons(client);
+        EmitZombieYell(client);
 
         PrintCenterText(client, "Ughhhh..... BRAINNNSSSS"); 
+
     }
 }
 
@@ -891,6 +899,14 @@ stock StripWeapons(client)
         RemovePlayerItem(client, weapon_ent);
         RemoveEdict(weapon_ent);
     }
+}
+
+stock EmitZombieYell(client)
+{
+    decl String:tmp[PLATFORM_MAX_PATH];
+    Format(tmp, sizeof(tmp), "npc/zombie/zombie_chase-%d.wav", GetRandomInt(1, 4));
+    //Format(tmp, sizeof(tmp), "npc/zombie/moan_loop%d.wav", GetRandomInt(1, 4));
+    EmitSoundToAll(tmp, client, SNDCHAN_AUTO, SNDLEVEL_SCREAMING, SND_CHANGEPITCH, SNDVOL_NORMAL, GetRandomInt(85, 110));
 }
 
 stock RandomizeModel(client)
