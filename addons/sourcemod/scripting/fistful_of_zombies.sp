@@ -216,6 +216,16 @@ public OnMapStart()
         PrecacheSound(tmp, true);
     }
 
+    for (new i=1; i<=2; i++) {
+        Format(tmp, sizeof(tmp), "npc/zombie/claw_miss%d.wav", i);
+        PrecacheSound(tmp, true);
+    }
+
+    for (new i=1; i<=3; i++) {
+        Format(tmp, sizeof(tmp), "npc/zombie/claw_strike%d.wav", i);
+        PrecacheSound(tmp, true);
+    }
+
     g_Model_Vigilante = PrecacheModel("models/playermodels/player1.mdl");
     g_Model_Desperado = PrecacheModel("models/playermodels/player2.mdl");
     g_Model_Bandido = PrecacheModel("models/playermodels/bandito.mdl");
@@ -521,6 +531,20 @@ public Action:SoundCallback(clients[64], &numClients, String:sample[PLATFORM_MAX
             if(StrContains(sample, "player/footsteps") == 0)
             {
                 Format(sample, sizeof(sample), "npc/zombie/foot%d.wav", GetRandomInt(1, 3));
+                return Plugin_Changed;
+            }
+
+            //Change zombie punching
+            if(StrContains(sample, "weapons/fists/fists_punch") == 0)
+            {
+                Format(sample, sizeof(sample), "npc/zombie/claw_strike%d.wav", GetRandomInt(1, 3));
+                return Plugin_Changed;
+            }
+            
+            //Change zombie punch missing
+            if(StrContains(sample, "weapons/fists/fists_miss") == 0)
+            {
+                Format(sample, sizeof(sample), "npc/zombie/claw_miss%d.wav", GetRandomInt(1, 2));
                 return Plugin_Changed;
             }
 
