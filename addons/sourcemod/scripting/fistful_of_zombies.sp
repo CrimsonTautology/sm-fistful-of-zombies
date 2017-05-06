@@ -201,6 +201,16 @@ public OnMapStart()
         PrecacheSound(tmp, true);
     }
 
+    for (new i=1; i<=14; i++) {
+        Format(tmp, sizeof(tmp), "npc/zombie/moan-%02d.wav", i);
+        PrecacheSound(tmp, true);
+    }
+
+    for (new i=1; i<=4; i++) {
+        Format(tmp, sizeof(tmp), "npc/zombie/zombie_chase-%d.wav", i);
+        PrecacheSound(tmp, true);
+    }
+
     g_Model_Vigilante = PrecacheModel("models/playermodels/player1.mdl");
     g_Model_Desperado = PrecacheModel("models/playermodels/player2.mdl");
     g_Model_Bandido = PrecacheModel("models/playermodels/bandito.mdl");
@@ -508,8 +518,9 @@ public Action:SoundCallback(clients[64], &numClients, String:sample[PLATFORM_MAX
 
             if(StrContains(sample, "player/voice") == 0 || StrContains(sample, "npc/mexican") == 0)
             {
-                pitch = 40;
-                flags |= SND_CHANGEPITCH;
+                Format(sample, sizeof(sample), "npc/zombie/moan-%02d.wav", GetRandomInt(1, 14));
+                //pitch = 40;
+                //flags |= SND_CHANGEPITCH;
                 return Plugin_Changed;
             }
         }
