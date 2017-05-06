@@ -30,7 +30,6 @@
 #define GAME_DESCRIPTION    "Fistful Of Zombies"
 #define SOUND_ROUNDSTART    "music/standoff1.mp3"
 #define SOUND_STINGER       "music/kill1.wav"
-#define SOUND_CHANGED       "player/fallscream2.wav"
 #define SOUND_NOPE          "player/voice/no_no1.wav"
 
 #define TEAM_HUMAN              2   //Vigilantes
@@ -192,7 +191,6 @@ public OnMapStart()
     //Cache materials
     PrecacheSound(SOUND_ROUNDSTART, true);
     PrecacheSound(SOUND_STINGER, true);
-    PrecacheSound(SOUND_CHANGED, true);
     PrecacheSound(SOUND_NOPE, true);
 
     //Precache zombie sounds
@@ -223,6 +221,11 @@ public OnMapStart()
 
     for (new i=1; i<=3; i++) {
         Format(tmp, sizeof(tmp), "npc/zombie/claw_strike%d.wav", i);
+        PrecacheSound(tmp, true);
+    }
+
+    for (new i=1; i<=3; i++) {
+        Format(tmp, sizeof(tmp), "npc/zombie/zombie_die%d.wav", i);
         PrecacheSound(tmp, true);
     }
 
@@ -545,6 +548,13 @@ public Action:SoundCallback(clients[64], &numClients, String:sample[PLATFORM_MAX
             if(StrContains(sample, "weapons/fists/fists_miss") == 0)
             {
                 Format(sample, sizeof(sample), "npc/zombie/claw_miss%d.wav", GetRandomInt(1, 2));
+                return Plugin_Changed;
+            }
+
+            //Change zombie death sound
+            if(StrContains(sample, "player/voice/pain/pl_death") == 0 || StrContains(sample, "player/voice2/pain/pl_death") == 0 || StrContains(sample, "player/voice4/pain/pl_death") == 0 || StrContains(sample, "npc/mexican/death") == 0)
+            {
+                Format(sample, sizeof(sample), "npc/zombie/zombie_die%d.wav", GetRandomInt(1, 3));
                 return Plugin_Changed;
             }
 
@@ -1006,7 +1016,7 @@ stock InfectedToZombie(client)
     JoinZombieTeam(client);
     Entity_SetModelIndex(client, g_Model_Zombie);
 
-    EmitSoundToAll(SOUND_CHANGED, client, SNDCHAN_AUTO, SNDLEVEL_SCREAMING, SND_CHANGEPITCH, SNDVOL_NORMAL, 40);
+    EmitZombieYell(client);
     SetEntPropFloat(client, Prop_Send, "m_flDrunkness", 0.0);
 
     PrintCenterTextAll("%N has succumbed to the infection...", client);
