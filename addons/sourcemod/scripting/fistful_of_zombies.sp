@@ -1119,7 +1119,7 @@ stock WriteLog(const String:format[], any:... )
         decl String:buf[2048];
         VFormat(buf, sizeof(buf), format, 2 );
         //LogToFileEx("log_zombie.txt", "[%.3f] %s", GetGameTime(), buf);
-        PrintToServer("---FoZ: %s", buf);
+        PrintToServer("[FoZ] %s", buf);
     }
 #endif
 }
