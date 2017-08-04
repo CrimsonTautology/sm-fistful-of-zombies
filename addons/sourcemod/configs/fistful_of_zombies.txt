@@ -24,6 +24,7 @@ fistful_of_zombies
 
         weapon_peacemaker { weight 6 }
         weapon_coachgun { weight 6 }
+        weapon_spencer { weight 6 }
 
         weapon_whiskey { weight 4 }
         weapon_machete { weight 4 }
@@ -53,6 +54,7 @@ fistful_of_zombies
         weapon_henryrifle { weight 1 }
         weapon_peacemaker { weight 1 }
         weapon_coachgun { weight 1 }
+        weapon_spencer { weight 1 }
     }
 
     gear_secondary
