@@ -33,11 +33,13 @@
 #define SOUND_NOPE          "player/voice/no_no1.wav"
 
 #define TEAM_HUMAN              2   //Vigilantes
+#define TEAM_HUMAN_STR          "2"
 #define INFO_PLAYER_HUMAN       "info_player_vigilante"
 #define ON_NO_HUMAN_ALIVE       "OnNoVigAlive"
 #define INPUT_HUMAN_VICTORY     "InputVigVictory"
 
 #define TEAM_ZOMBIE             3   //Desperados
+#define TEAM_ZOMBIE_STR         "3"
 #define INFO_PLAYER_ZOMBIE      "info_player_desperado"
 #define ON_NO_ZOMBIE_ALIVE      "OnNoDespAlive"
 #define INPUT_ZOMBIE_VICTORY    "InputDespVictory"
@@ -500,16 +502,27 @@ public Action:Command_JoinTeam(client, const String:command[], args)
     decl String:cmd[32];
     GetCmdArg(1, cmd, sizeof(cmd));
 
+    if(GetRoundState() == RoundGrace)
+    {
+        //Block players switching to humans
+        if(StrEqual(cmd, TEAM_HUMAN_STR, false) || StrEqual(cmd, "auto", false))
+        {
+            EmitSoundToClient(client, SOUND_NOPE);
+            PrintCenterText(client, "I can't let you do that, starfox!"); 
+            PrintToChat(client, "I can't let you do that, starfox!"); 
+            return Plugin_Handled;
+        }
+    }
+
     if(GetRoundState() == RoundActive)
     {
         //If attempting to join human team or random then join zombie team
-        if(StrEqual(cmd, "3", false) || StrEqual(cmd, "auto", false))
+        if(StrEqual(cmd, TEAM_HUMAN_STR, false) || StrEqual(cmd, "auto", false))
         {
-            JoinZombieTeam(client);
             return Plugin_Handled;
         }
         //If attempting to join zombie team or spectator, let them
-        else if(StrEqual(cmd, "2", false) || StrEqual(cmd, "spectate", false))
+        else if(StrEqual(cmd, TEAM_ZOMBIE_STR, false) || StrEqual(cmd, "spectate", false))
         {
             return Plugin_Continue;
         }
