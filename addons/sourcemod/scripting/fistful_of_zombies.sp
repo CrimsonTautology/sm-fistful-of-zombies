@@ -238,6 +238,7 @@ public OnMapStart()
     g_Model_Ghost = PrecacheModel("models/npc/ghost.mdl");
     g_Model_Skeleton = PrecacheModel("models/skeleton.mdl");
     g_Model_Zombie = PrecacheModel("models/zombies/fof_zombie.mdl");
+    //g_Model_Zombie = PrecacheModel("models/elpaso/barrel1_explosive.mdl");
 
     //Initial setup
     ConvertSpawns();
