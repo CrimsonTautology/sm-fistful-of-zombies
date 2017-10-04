@@ -18,7 +18,7 @@
 #undef REQUIRE_EXTENSIONS
 #tryinclude <steamworks>
 
-#define PLUGIN_VERSION		"1.1.1"
+#define PLUGIN_VERSION		"1.1.2"
 #define PLUGIN_NAME         "[FoF] Fistful Of Zombies"
 #define DEBUG				true
 
@@ -792,6 +792,7 @@ SpawnZombieTeamplay()
         DispatchKeyValue(ent, "RoundBased", "1");
         DispatchKeyValue(ent, "RespawnSystem", "1");
 
+        Format(tmp, sizeof(tmp),                 "!self,RoundTime,%d,0,-1", GetRoundTime());
         DispatchKeyValue(ent, "OnNewRound",      tmp);
         DispatchKeyValue(ent, "OnNewRound",      "!self,ExtraTime,15,0.1,-1");
 
