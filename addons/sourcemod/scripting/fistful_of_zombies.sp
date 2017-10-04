@@ -67,6 +67,7 @@ new Handle:g_LootTable = INVALID_HANDLE;
 new g_LootTotalWeight;
 
 new g_Teamplay = INVALID_ENT_REFERENCE;
+new bool:g_UndoTeamplayDescription = false;
 
 new g_Model_Vigilante;
 new g_Model_Desperado;
@@ -240,6 +241,7 @@ public OnMapStart()
     ConvertSpawns();
     ConvertWhiskey(g_LootTable, g_LootTotalWeight);
     g_Teamplay = SpawnZombieTeamplay();
+    g_UndoTeamplayDescription = true;
 
     SetRoundState(RoundPre);
 
@@ -414,6 +416,14 @@ public Action:Timer_EndGrace(Handle:timer)
 public Action:Timer_Repeat(Handle:timer)
 {
     if(!IsEnabled()) return Plugin_Continue;
+
+    //NOTE: Spawning a teamplay entity seems to now change game description to
+    //Teamplay.  Need to re-set game description back to zombies next iteration.
+    if (g_UndoTeamplayDescription)
+    {
+         SetGameDescription(GAME_DESCRIPTION);
+         g_UndoTeamplayDescription = false;
+    }
 
     RoundEndCheck();
 
@@ -1080,12 +1090,13 @@ public RewardSurvivingHumans()
     }
 }
 
-stock bool:SetGameDescription(String:description[], bool:override = true)
+stock bool:SetGameDescription(String:description[])
 {
 #if defined _SteamWorks_Included
-    if(override) return SteamWorks_SetGameDescription(description);
-#endif
+    return SteamWorks_SetGameDescription(description);
+#else
     return false;
+#endif
 }
 
 stock WriteLog(const String:format[], any:... )
