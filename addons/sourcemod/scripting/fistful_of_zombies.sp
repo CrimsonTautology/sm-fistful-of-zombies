@@ -147,16 +147,13 @@ public OnPluginStart()
     HookEvent("round_end", Event_RoundEnd);
     HookEvent("player_team", Event_PlayerTeam, EventHookMode_Pre);
 
-    RegAdminCmd("sm_zombie", Command_Zombie, ADMFLAG_ROOT, "TEST command");//TODO
-    RegAdminCmd("foz_dump", Command_Dump, ADMFLAG_ROOT, "TEST command");//TODO
+    RegAdminCmd("foz_dump", Command_Dump, ADMFLAG_ROOT, "TEST: Output information about the current game to console");
 
     AddCommandListener(Command_JoinTeam, "jointeam");
 
     g_Cvar_TeambalanceAllowed = FindConVar("fof_sv_teambalance_allowed");
     g_Cvar_TeamsUnbalanceLimit = FindConVar("mp_teams_unbalance_limit");
     g_Cvar_Autoteambalance = FindConVar("mp_autoteambalance");
-
-    //AutoExecConfig();
 
     AddNormalSoundHook(SoundCallback);
 }
@@ -238,14 +235,11 @@ public OnMapStart()
     g_Model_Ghost = PrecacheModel("models/npc/ghost.mdl");
     g_Model_Skeleton = PrecacheModel("models/skeleton.mdl");
     g_Model_Zombie = PrecacheModel("models/zombies/fof_zombie.mdl");
-    //g_Model_Zombie = PrecacheModel("models/elpaso/barrel1_explosive.mdl");
 
     //Initial setup
     ConvertSpawns();
     ConvertWhiskey(g_LootTable, g_LootTotalWeight);
     g_Teamplay = SpawnZombieTeamplay();
-    //Team_SetName(TEAM_ZOMBIE, "Zombies");
-    //Team_SetName(TEAM_HUMAN, "Humans");
 
     SetRoundState(RoundPre);
 
@@ -434,7 +428,6 @@ public Action:Timer_Repeat(Handle:timer)
 
         }else if(IsZombie(client))
         {
-            //No-op
             StripWeapons(client);
         }
     }
@@ -575,36 +568,12 @@ public Action:SoundCallback(clients[64], &numClients, String:sample[PLATFORM_MAX
             if(StrContains(sample, "player/voice") == 0 || StrContains(sample, "npc/mexican") == 0)
             {
                 Format(sample, sizeof(sample), "npc/zombie/moan-%02d.wav", GetRandomInt(1, 14));
-                //pitch = 40;
-                //flags |= SND_CHANGEPITCH;
                 return Plugin_Changed;
             }
         }
     }
     return Plugin_Continue;
 }
-
-
-public Action:Command_Zombie(client, args)
-{
-    if(!IsEnabled())
-    {
-        ReplyToCommand(client, "not_enabled");
-        return Plugin_Handled;
-    }
-
-    new String:tmp[512];
-    Team_GetName(TEAM_ZOMBIE, tmp, sizeof(tmp));
-    WriteLog("TEAM_ZOMBIE = %s", tmp);
-    Team_GetName(TEAM_HUMAN, tmp, sizeof(tmp));
-    WriteLog("TEAM_HUMAN  = %s", tmp);
-
-    //BecomeInfected(client);
-    //Entity_SetMaxHealth(client, 420);
-    BecomeGhost(client);
-    return Plugin_Handled;
-}
-
 
 public Action:Command_Dump(caller, args)
 {
@@ -812,10 +781,7 @@ SpawnZombieTeamplay()
 
         DispatchKeyValue(ent, "RoundBased", "1");
         DispatchKeyValue(ent, "RespawnSystem", "1");
-        //DispatchKeyValue(ent, "SwitchTeams", "1");
 
-        //Todo, cvar ExtraTime and RoundTime
-        Format(tmp, sizeof(tmp),                 "!self,RoundTime,%d,0,-1", GetRoundTime());
         DispatchKeyValue(ent, "OnNewRound",      tmp);
         DispatchKeyValue(ent, "OnNewRound",      "!self,ExtraTime,15,0.1,-1");
 
@@ -876,7 +842,6 @@ stock RandomizeTeams()
         client_count++;
     }
 
-    //SortIntegers(clients, client_count, Sort_Random);
     SortCustom1D(clients, client_count, Sort_HumanPriority);
 
     //Calculate number of humans;  need at least one
@@ -953,7 +918,6 @@ stock EmitZombieYell(client)
 {
     decl String:tmp[PLATFORM_MAX_PATH];
     Format(tmp, sizeof(tmp), "npc/zombie/zombie_chase-%d.wav", GetRandomInt(1, 4));
-    //Format(tmp, sizeof(tmp), "npc/zombie/moan_loop%d.wav", GetRandomInt(1, 4));
     EmitSoundToAll(tmp, client, SNDCHAN_AUTO, SNDLEVEL_SCREAMING, SND_CHANGEPITCH, SNDVOL_NORMAL, GetRandomInt(85, 110));
 }
 
@@ -1012,7 +976,6 @@ stock bool:InfectionChanceRoll()
     if(humans <= 1) return false;
 
     new Float:chance = GetConVarFloat(g_Cvar_Infection);
-    //chance *= (Float:humans / Float:MAXPLAYERS);
 
     return GetURandomFloat() < chance;
 }
@@ -1132,7 +1095,6 @@ stock WriteLog(const String:format[], any:... )
     {
         decl String:buf[2048];
         VFormat(buf, sizeof(buf), format, 2 );
-        //LogToFileEx("log_zombie.txt", "[%.3f] %s", GetGameTime(), buf);
         PrintToServer("[FoZ] %s", buf);
     }
 #endif
