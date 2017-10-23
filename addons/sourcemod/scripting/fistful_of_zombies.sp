@@ -101,7 +101,7 @@ public Plugin:myinfo =
 
 public OnPluginStart()
 {
-    CreateConVar("foz_version", PLUGIN_VERSION, PLUGIN_NAME, FCVAR_PLUGIN | FCVAR_SPONLY | FCVAR_REPLICATED | FCVAR_NOTIFY | FCVAR_DONTRECORD);
+    CreateConVar("foz_version", PLUGIN_VERSION, PLUGIN_NAME, FCVAR_SPONLY | FCVAR_REPLICATED | FCVAR_NOTIFY | FCVAR_DONTRECORD);
 
     g_Cvar_Enabled = CreateConVar(
             "foz_enabled",
@@ -112,25 +112,25 @@ public OnPluginStart()
             "foz_config",
             "fistful_of_zombies.txt",
             "Location of the Fistful of Zombies configuration file",
-            FCVAR_PLUGIN);
+            0);
 
     g_Cvar_RoundTime = CreateConVar(
             "foz_round_time",
             "120",
             "How long surviors have to survive in seconds to win a round in Fistful of Zombies",
-            FCVAR_PLUGIN);
+            0);
 
     g_Cvar_RespawnTime = CreateConVar(
             "foz_respawn_time",
             "15",
             "How long zombies have to wait before respawning in Fistful of Zombies",
-            FCVAR_PLUGIN);
+            0);
 
     g_Cvar_Ratio = CreateConVar(
             "foz_ratio",
             "0.65",
             "Percentage of players that start as human.",
-            FCVAR_PLUGIN,
+            0,
             true, 0.01,
             true, 1.0);
 
@@ -138,7 +138,7 @@ public OnPluginStart()
             "foz_infection",
             "0.10",
             "Chance that a human will be infected when punched by a zombie.  Value is scaled such that more human players increase the chance",
-            FCVAR_PLUGIN,
+            0,
             true, 0.01,
             true, 1.0);
 
