@@ -74,8 +74,10 @@ new g_Model_Desperado;
 new g_Model_Bandido;
 new g_Model_Ranger;
 new g_Model_Ghost;
-new g_Model_Skeleton;
+//new g_Model_Skeleton;
 new g_Model_Zombie;
+//new g_Model_Barrel;
+//new g_Model_Train;
 
 //A priority scaling for assigning to the human team;  a higher value has a
 //higher priority for joining humans.
@@ -229,13 +231,18 @@ public OnMapStart()
         PrecacheSound(tmp, true);
     }
 
+    PrecacheSound("vehicles/train/whistle.wav", true);
+    PrecacheSound("player/fallscream1.wav", true);
+
     g_Model_Vigilante = PrecacheModel("models/playermodels/player1.mdl");
     g_Model_Desperado = PrecacheModel("models/playermodels/player2.mdl");
     g_Model_Bandido = PrecacheModel("models/playermodels/bandito.mdl");
     g_Model_Ranger = PrecacheModel("models/playermodels/frank.mdl");
     g_Model_Ghost = PrecacheModel("models/npc/ghost.mdl");
-    g_Model_Skeleton = PrecacheModel("models/skeleton.mdl");
+    //g_Model_Skeleton = PrecacheModel("models/skeleton.mdl");
     g_Model_Zombie = PrecacheModel("models/zombies/fof_zombie.mdl");
+    //g_Model_Barrel = PrecacheModel("models/elpaso/barrel1_explosive.mdl");
+    //g_Model_Train = PrecacheModel("models/props/forest/train.mdl");
 
     //Initial setup
     ConvertSpawns();
@@ -350,7 +357,8 @@ public PlayerSpawnDelay(any:userid)
     } else if(IsZombie(client))
     {
         //Force client model
-        Entity_SetModelIndex(client, g_Model_Zombie);
+        //Entity_SetModelIndex(client, g_Model_Zombie);
+        RandomizeModel(client);
         StripWeapons(client);
         EmitZombieYell(client);
 
@@ -547,6 +555,9 @@ public Action:SoundCallback(clients[64], &numClients, String:sample[PLATFORM_MAX
         //Change the voice of zombie players
         if(IsZombie(entity))
         {
+            //Format(sample, sizeof(sample), "vehicles/train/whistle.wav");
+            //Format(sample, sizeof(sample), "player/fallscream1.wav");
+
             //Change to zombie footsteps
             if(StrContains(sample, "player/footsteps") == 0)
             {
@@ -949,12 +960,10 @@ stock RandomizeModel(client)
 
     } else if(IsZombie(client))
     {
-        model = GetRandomInt(0, 2);
+        model = GetRandomInt(0, 0);
         switch (model)
         {
-            case 0: { Entity_SetModelIndex(client, g_Model_Ghost); }
-            case 1: { Entity_SetModelIndex(client, g_Model_Skeleton); }
-            case 2: { Entity_SetModelIndex(client, g_Model_Zombie); }
+            case 0: { Entity_SetModelIndex(client, g_Model_Zombie); }
         }
     }
 }
