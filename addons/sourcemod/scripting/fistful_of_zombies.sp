@@ -67,7 +67,7 @@ new Handle:g_LootTable = INVALID_HANDLE;
 new g_LootTotalWeight;
 
 new g_Teamplay = INVALID_ENT_REFERENCE;
-new bool:g_UndoTeamplayDescription = false;
+new bool:g_AutoSetGameDescription = false;
 
 new g_Model_Vigilante;
 new g_Model_Desperado;
@@ -248,7 +248,7 @@ public OnMapStart()
     ConvertSpawns();
     ConvertWhiskey(g_LootTable, g_LootTotalWeight);
     g_Teamplay = SpawnZombieTeamplay();
-    g_UndoTeamplayDescription = true;
+    g_AutoSetGameDescription = true;
 
     SetRoundState(RoundPre);
 
@@ -427,10 +427,10 @@ public Action:Timer_Repeat(Handle:timer)
 
     //NOTE: Spawning a teamplay entity seems to now change game description to
     //Teamplay.  Need to re-set game description back to zombies next iteration.
-    if (g_UndoTeamplayDescription)
+    if (g_AutoSetGameDescription)
     {
          SetGameDescription(GAME_DESCRIPTION);
-         g_UndoTeamplayDescription = false;
+         g_AutoSetGameDescription = false;
     }
 
     RoundEndCheck();
@@ -550,7 +550,7 @@ public Action:Command_JoinTeam(client, const String:command[], args)
 
 public Action:SoundCallback(clients[64], &numClients, String:sample[PLATFORM_MAX_PATH], &entity, &channel, &Float:volume, &level, &pitch, &flags)
 {
-    if (entity > 0 && entity <= MaxClients)
+    if (0 < entity <= MaxClients)
     {
         //Change the voice of zombie players
         if(IsZombie(entity))
@@ -1090,7 +1090,7 @@ public RewardSurvivingHumans()
     //to pump their priority by one so they have a better chance to be human
     //next round.
 
-    for(new client = 0; client < MaxClients; client++)
+    for(new client = 0; client <= MaxClients; client++)
     {
         if(!Client_IsIngame(client)) continue;
         if(!IsPlayerAlive(client)) continue;
