@@ -161,7 +161,7 @@ public OnPluginStart()
     AddNormalSoundHook(SoundCallback);
 }
 
-public OnClientPostAdminCheck(client)
+public OnClientPutInServer(client)
 {
     if(!IsEnabled()) return;
 
