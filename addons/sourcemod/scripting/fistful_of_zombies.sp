@@ -57,11 +57,11 @@ new Handle:g_Cvar_Autoteambalance = INVALID_HANDLE;
 
 new Handle:g_GearPrimaryTable = INVALID_HANDLE;
 new g_GearPrimaryTotalWeight;
-new bool:g_GivenPrimary[MaxClients+1] = {false, ...};
+new bool:g_GivenPrimary[MAXPLAYERS+1] = {false, ...};
 
 new Handle:g_GearSecondaryTable = INVALID_HANDLE;
 new g_GearSecondaryTotalWeight;
-new bool:g_GivenSecondary[MaxClients+1] = {false, ...};
+new bool:g_GivenSecondary[MAXPLAYERS+1] = {false, ...};
 
 new Handle:g_LootTable = INVALID_HANDLE;
 new g_LootTotalWeight;
@@ -81,7 +81,7 @@ new g_Model_Zombie;
 
 //A priority scaling for assigning to the human team;  a higher value has a
 //higher priority for joining humans.
-new g_HumanPriority[MaxClients+1] = {0, ...};
+new g_HumanPriority[MAXPLAYERS+1] = {0, ...};
 
 enum FoZRoundState
 {
@@ -435,7 +435,7 @@ public Action:Timer_Repeat(Handle:timer)
 
     RoundEndCheck();
 
-    for (new client=1; client <= MaxClients; client++)
+    for (new client = 1; client <= MaxClients; client++)
     {
         if(!IsClientInGame(client)) continue;
 
@@ -604,7 +604,7 @@ public Action:Command_Dump(caller, args)
     PrintToConsole(caller, "TEAM_ZOMBIE: %d, TEAM_HUMAN: %d", TEAM_ZOMBIE, TEAM_HUMAN);
     PrintToConsole(caller, "---------------------------------");
     PrintToConsole(caller, "team          health pri user");
-    for (new client=1; client <= MaxClients; client++)
+    for (new client = 1; client <= MaxClients; client++)
     {
         if(!IsClientInGame(client)) continue;
 
@@ -851,7 +851,7 @@ stock JoinZombieTeam(client)
 
 stock RandomizeTeams()
 {
-    decl clients[MaxClients+1];
+    decl clients[MAXPLAYERS+1];
     new client_count = 0, human_count, client;
     new Float:ratio = GetConVarFloat(g_Cvar_Ratio);
 
@@ -1090,7 +1090,7 @@ public RewardSurvivingHumans()
     //to pump their priority by one so they have a better chance to be human
     //next round.
 
-    for(new client = 0; client <= MaxClients; client++)
+    for(new client = 1; client <= MaxClients; client++)
     {
         if(!Client_IsIngame(client)) continue;
         if(!IsPlayerAlive(client)) continue;
