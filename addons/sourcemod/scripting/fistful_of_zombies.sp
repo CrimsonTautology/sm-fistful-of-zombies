@@ -57,11 +57,11 @@ new Handle:g_Cvar_Autoteambalance = INVALID_HANDLE;
 
 new Handle:g_GearPrimaryTable = INVALID_HANDLE;
 new g_GearPrimaryTotalWeight;
-new bool:g_GivenPrimary[MAXPLAYERS] = {false, ...};
+new bool:g_GivenPrimary[MaxClients+1] = {false, ...};
 
 new Handle:g_GearSecondaryTable = INVALID_HANDLE;
 new g_GearSecondaryTotalWeight;
-new bool:g_GivenSecondary[MAXPLAYERS] = {false, ...};
+new bool:g_GivenSecondary[MaxClients+1] = {false, ...};
 
 new Handle:g_LootTable = INVALID_HANDLE;
 new g_LootTotalWeight;
@@ -81,7 +81,7 @@ new g_Model_Zombie;
 
 //A priority scaling for assigning to the human team;  a higher value has a
 //higher priority for joining humans.
-new g_HumanPriority[MAXPLAYERS] = {0, ...};
+new g_HumanPriority[MaxClients+1] = {0, ...};
 
 enum FoZRoundState
 {
@@ -98,7 +98,7 @@ public Plugin:myinfo =
     author = "CrimsonTautology",
     description = "Zombie Survival for Fistful of Frags",
     version = PLUGIN_VERSION,
-    url = "https://github.com/CrimsonTautology/sm_fistful_of_zombies"
+    url = "https://github.com/CrimsonTautology/sm-fistful-of-zombies"
 };
 
 public OnPluginStart()
@@ -851,7 +851,7 @@ stock JoinZombieTeam(client)
 
 stock RandomizeTeams()
 {
-    decl clients[MAXPLAYERS];
+    decl clients[MaxClients+1];
     new client_count = 0, human_count, client;
     new Float:ratio = GetConVarFloat(g_Cvar_Ratio);
 
