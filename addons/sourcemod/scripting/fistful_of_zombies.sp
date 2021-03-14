@@ -12,7 +12,10 @@
 #include <sourcemod>
 #include <sdktools>
 #include <sdkhooks>
-#include <smlib>
+#include <smlib/clients>
+#include <smlib/teams>
+#include <smlib/entities>
+#include <smlib/weapons>
 #undef REQUIRE_EXTENSIONS
 #tryinclude <steamworks>
 
@@ -328,7 +331,7 @@ void PlayerSpawnDelay(int userid)
     int client = GetClientOfUserId(userid);
 
     if (!IsEnabled()) return;
-    if (!Client_IsIngame(client)) return;
+    if (!IsClientIngame(client)) return;
     if (!IsPlayerAlive(client)) return;
 
     g_GivenPrimary[client] = false;
@@ -363,7 +366,7 @@ void BecomeZombieDelay(int userid)
     int client = GetClientOfUserId(userid);
 
     if (!IsEnabled()) return;
-    if (!Client_IsIngame(client)) return;
+    if (!IsClientIngame(client)) return;
 
     JoinZombieTeam(client);
 }
@@ -373,7 +376,7 @@ Action Timer_GivePrimaryWeapon(Handle timer, int userid)
     int client = GetClientOfUserId(userid);
 
     if (!IsEnabled()) return Plugin_Handled;
-    if (!Client_IsIngame(client)) return Plugin_Handled;
+    if (!IsClientIngame(client)) return Plugin_Handled;
     if (IsZombie(client)) return Plugin_Handled;
     if (g_GivenPrimary[client]) return Plugin_Handled;
     char weapon[MAX_KEY_LENGTH];
@@ -393,7 +396,7 @@ Action Timer_GiveSecondaryWeapon(Handle timer, int userid)
     int client = GetClientOfUserId(userid);
 
     if (!IsEnabled()) return Plugin_Handled;
-    if (!Client_IsIngame(client)) return Plugin_Handled;
+    if (!IsClientIngame(client)) return Plugin_Handled;
     if (IsZombie(client)) return Plugin_Handled;
     if (g_GivenSecondary[client]) return Plugin_Handled;
 
@@ -474,8 +477,8 @@ Action Hook_OnTakeDamage(int victim, int& attacker, int& inflictor,
         float damagePosition[3])
 {
     if (!IsEnabled()) return Plugin_Continue;
-    if (!Client_IsIngame(attacker)) return Plugin_Continue;
-    if (!Client_IsIngame(victim)) return Plugin_Continue;
+    if (!IsClientIngame(attacker)) return Plugin_Continue;
+    if (!IsClientIngame(victim)) return Plugin_Continue;
     if (attacker == victim) return Plugin_Continue;
 
     if (weapon > 0 && IsHuman(victim) && IsZombie(attacker))
@@ -504,7 +507,7 @@ Action Hook_OnTakeDamage(int victim, int& attacker, int& inflictor,
 Action Command_JoinTeam(int client, const char[] command, int argc)
 {
     if (!IsEnabled()) return Plugin_Continue;
-    if (!Client_IsIngame(client)) return Plugin_Continue;
+    if (!IsClientIngame(client)) return Plugin_Continue;
 
     char arg[32];
     GetCmdArg(1, arg, sizeof(arg));
@@ -1067,7 +1070,7 @@ bool InfectionStep(int& client, float& interval, int& currentCall)
     // this steps through the process of an infected human to a zombie takes
     // 300 steps or 30 seconds
     if (!IsEnabled()) return false;
-    if (!Client_IsIngame(client)) return false;
+    if (!IsClientIngame(client)) return false;
     if (!IsPlayerAlive(client)) return false;
     if (!IsHuman(client)) return false;
     if (GetRoundState() != RoundActive) return false;
@@ -1124,7 +1127,7 @@ void RewardSurvivingHumans()
 
     for (int client = 1; client <= MaxClients; client++)
     {
-        if (!Client_IsIngame(client)) continue;
+        if (!IsClientIngame(client)) continue;
         if (!IsPlayerAlive(client)) continue;
         if (!IsHuman(client)) continue;
 
@@ -1139,6 +1142,19 @@ bool SetGameDescription(const char[] description)
 #else
     return false;
 #endif
+}
+
+stock bool IsClientIngame(int client)
+{
+	if (client > 4096) {
+		client = EntRefToEntIndex(client);
+	}
+
+	if (client < 1 || client > MaxClients) {
+		return false;
+	}
+
+	return IsClientInGame(client);
 }
 
 stock void WriteLog(const char[] format, any ...)
