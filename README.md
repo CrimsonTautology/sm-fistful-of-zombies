@@ -104,5 +104,5 @@ make uninstall SRCDS=/path/to/srcds
 ## Acknowledgements
 
 * Resi - Developed the custom map "foz_undeadwood"
-* elise - Developed the custom map "foz_undeadwood"
+* elise - Developed the custom map "foz_twintowers"
 * nbreech - Developed the custom map "foz_greenglacier"
