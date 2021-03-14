@@ -10,16 +10,15 @@
 /*
  * End's the game and displays the scoreboard with intermission time.
  *
- * @noparam
  * @return				True on success, false otherwise
  */
-stock bool:Game_End()
+stock bool Game_End()
 {
-	new game_end = FindEntityByClassname(-1, "game_end");
+	int game_end = FindEntityByClassname(-1, "game_end");
 
 	if (game_end == -1) {
 		game_end = CreateEntityByName("game_end");
-		
+
 		if (game_end == -1) {
 			ThrowError("Unable to find or create entity \"game_end\"");
 		}
@@ -35,12 +34,12 @@ stock bool:Game_End()
  *
  * @param team			The winning Team, pass 0 for Sudden Death mode (no winning team)
  * @param forceMapReset If to force the map to reset during the force respawn after the round is over.
- * @param switchTeams	If to switch the teams when the game is going to be reset. 
+ * @param switchTeams	If to switch the teams when the game is going to be reset.
  * @return				True on success, false otherwise
  */
-stock bool:Game_EndRound(team=0, bool:forceMapReset=false, bool:switchTeams=false)
+stock bool Game_EndRound(int team=0, bool forceMapReset=false, bool switchTeams=false)
 {
-	new game_round_win = FindEntityByClassname(-1, "game_round_win");
+	int game_round_win = FindEntityByClassname(-1, "game_round_win");
 
 	if (game_round_win == -1) {
 		game_round_win = CreateEntityByName("game_round_win");

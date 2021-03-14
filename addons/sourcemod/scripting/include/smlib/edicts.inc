@@ -13,11 +13,11 @@
  * @param name			Name of the entity you want so search.
  * @return				Edict Index or INVALID_ENT_REFERENCE if no entity was found.
  */
-stock Edict_FindByName(const String:name[])
+stock int Edict_FindByName(const char[] name)
 {
-	new maxEntities = GetMaxEntities();
-	for (new edict=0; edict < maxEntities; edict++) {
-		
+	int maxEntities = GetMaxEntities();
+	for (int edict=0; edict < maxEntities; edict++) {
+
 		if (!IsValidEdict(edict)) {
 			continue;
 		}
@@ -39,15 +39,15 @@ stock Edict_FindByName(const String:name[])
  * @param hammerId		Hammer editor ID
  * @return				Edict Index or INVALID_ENT_REFERENCE if no entity was found.
  */
-stock Edict_FindByHammerId(hammerId)
+stock int Edict_FindByHammerId(int hammerId)
 {
-	new maxEntities = GetMaxEntities();
-	for (new edict=0; edict < maxEntities; edict++) {
-		
+	int maxEntities = GetMaxEntities();
+	for (int edict=0; edict < maxEntities; edict++) {
+
 		if (!IsValidEdict(edict)) {
 			continue;
 		}
-		
+
 		if (Entity_GetHammerId(edict) == hammerId) {
 			return edict;
 		}
@@ -64,14 +64,14 @@ stock Edict_FindByHammerId(hammerId)
  * @param ignoreEntity		Ignore this entity
  * @return					Edict Index or INVALID_ENT_REFERENCE if no entity was found.
  */
-stock Edict_GetClosest(Float:vecOrigin_center[3], bool:clientsOnly=false, ignoreEntity=-1)
-{	
-	decl Float:vecOrigin_edict[3];
-	new Float:smallestDistance = 0.0;
-	new closestEdict = INVALID_ENT_REFERENCE;
-	
-	new maxEntities;
-	
+stock int Edict_GetClosest(float vecOrigin_center[3], bool clientsOnly=false, int ignoreEntity=-1)
+{
+	float vecOrigin_edict[3];
+	float smallestDistance = 0.0;
+	int closestEdict = INVALID_ENT_REFERENCE;
+
+	int maxEntities;
+
 	if (clientsOnly) {
 		maxEntities = MaxClients;
 	}
@@ -79,30 +79,30 @@ stock Edict_GetClosest(Float:vecOrigin_center[3], bool:clientsOnly=false, ignore
 		maxEntities = GetMaxEntities();
 	}
 
-	for (new edict=1; edict <= maxEntities; edict++) {
-		
+	for (int edict=1; edict <= maxEntities; edict++) {
+
 		if (!IsValidEdict(edict)) {
 			continue;
 		}
-		
+
 		if (ignoreEntity >= 0 && edict == ignoreEntity) {
 			continue;
 		}
-			
+
 		if (GetEntSendPropOffs(edict, "m_vecOrigin") == -1) {
 			continue;
 		}
 
 		Entity_GetAbsOrigin(edict, vecOrigin_edict);
-		
-		new Float:edict_distance = GetVectorDistance(vecOrigin_center, vecOrigin_edict, true);
-		
+
+		float edict_distance = GetVectorDistance(vecOrigin_center, vecOrigin_edict, true);
+
 		if (edict_distance < smallestDistance || smallestDistance == 0.0) {
 			smallestDistance = edict_distance;
 			closestEdict = edict;
 		}
 	}
-	
+
 	return closestEdict;
 }
 
@@ -113,14 +113,14 @@ stock Edict_GetClosest(Float:vecOrigin_center[3], bool:clientsOnly=false, ignore
  * @param clientsOnly		True if you only want to search for clients
  * @return					The closest edict or INVALID_ENT_REFERENCE
  */
-stock Edict_GetClosestToEdict(edict, bool:clientsOnly=false)
-{	
-	decl Float:vecOrigin[3];
-	
-	if (GetEntSendPropOffs(edict, "m_vecOrigin") == -1) {
+stock int Edict_GetClosestToEdict(int edict, bool clientsOnly=false)
+{
+	float vecOrigin[3];
+
+	if (!HasEntProp(edict, Prop_Send, "m_vecOrigin")) {
 		return INVALID_ENT_REFERENCE;
 	}
-	
+
 	Entity_GetAbsOrigin(edict, vecOrigin);
 
 	return Edict_GetClosest(vecOrigin, clientsOnly, edict);

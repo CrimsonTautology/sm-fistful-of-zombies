@@ -15,9 +15,9 @@
  * @param vehicle			Entity index.
  * @return					Client index, or -1 if there is no driver.
  */
-stock Vehicle_GetDriver(vehicle)
+stock int Vehicle_GetDriver(int vehicle)
 {
-	new m_hVehicle = GetEntPropEnt(vehicle, Prop_Send, "m_hPlayer");
+	int m_hVehicle = GetEntPropEnt(vehicle, Prop_Send, "m_hPlayer");
 
 	return m_hVehicle;
 }
@@ -28,9 +28,9 @@ stock Vehicle_GetDriver(vehicle)
  * @param vehicle			Entity index.
  * @return					True if the vehicle has a driver, false otherwise
  */
-stock bool:Vehicle_HasDriver(vehicle)
+stock bool Vehicle_HasDriver(int vehicle)
 {
-	return !(Vehicle_GetDriver(vehicle) == -1);
+	return Vehicle_GetDriver(vehicle) != -1;
 }
 
 /**
@@ -39,12 +39,12 @@ stock bool:Vehicle_HasDriver(vehicle)
  * @param vehicle			Entity index.
  * @return					True on success, false otherwise.
  */
-stock bool:Vehicle_ExitDriver(vehicle)
+stock bool Vehicle_ExitDriver(int vehicle)
 {
 	if (!Vehicle_HasDriver(vehicle)) {
 		return false;
 	}
-	
+
 	return AcceptEntityInput(vehicle, "ExitVehicle");
 }
 
@@ -54,9 +54,8 @@ stock bool:Vehicle_ExitDriver(vehicle)
  * @param vehicle			Entity index.
  * @return					True on success, false otherwise.
  */
-stock bool:Vehicle_TurnOn(vehicle)
+stock bool Vehicle_TurnOn(int vehicle)
 {
-	
 	return AcceptEntityInput(vehicle, "TurnOn");
 }
 
@@ -66,9 +65,8 @@ stock bool:Vehicle_TurnOn(vehicle)
  * @param vehicle			Entity index.
  * @return					True on success, false otherwise.
  */
-stock bool:Vehicle_TurnOff(vehicle)
+stock bool Vehicle_TurnOff(int vehicle)
 {
-	
 	return AcceptEntityInput(vehicle, "TurnOff");
 }
 
@@ -78,9 +76,8 @@ stock bool:Vehicle_TurnOff(vehicle)
  * @param vehicle			Entity index.
  * @return					True on success, false otherwise.
  */
-stock bool:Vehicle_Lock(vehicle)
+stock bool Vehicle_Lock(int vehicle)
 {
-	
 	return AcceptEntityInput(vehicle, "Lock");
 }
 
@@ -90,9 +87,8 @@ stock bool:Vehicle_Lock(vehicle)
  * @param vehicle			Entity index.
  * @return					True on success, false otherwise.
  */
-stock bool:Vehicle_Unlock(vehicle)
+stock bool Vehicle_Unlock(int vehicle)
 {
-	
 	return AcceptEntityInput(vehicle, "Unlock");
 }
 
@@ -102,12 +98,12 @@ stock bool:Vehicle_Unlock(vehicle)
  * @param vehicle			Entity index.
  * @return					True if it is a valid vehicle, false otherwise.
  */
-stock bool:Vehicle_IsValid(vehicle)
+stock bool Vehicle_IsValid(int vehicle)
 {
 	if (!Entity_IsValid(vehicle)) {
 		return false;
 	}
-	
+
 	return Entity_ClassNameMatches(vehicle, "prop_vehicle", true);
 }
 
@@ -121,7 +117,7 @@ stock bool:Vehicle_IsValid(vehicle)
  * @param size				String Buffer size.
  * @noreturn
  */
-stock bool:Vehicle_GetScript(vehicle, String:buffer[], size)
+stock bool Vehicle_GetScript(int vehicle, char[] buffer, int size)
 {
 	GetEntPropString(vehicle, Prop_Data, "m_vehicleScript", buffer, size);
 }
@@ -130,12 +126,12 @@ stock bool:Vehicle_GetScript(vehicle, String:buffer[], size)
  * Sets the script of a vehicle.
  * This script contains all the vehicle settings like its speed
  * and that stuff.
- * 
+ *
  * @param vehicle			Entity index.
  * @param buffer			Vehicle Script path.
  * @noreturn
  */
-stock bool:Vehicle_SetScript(vehicle, String:script[])
+stock bool Vehicle_SetScript(int vehicle, char[] script)
 {
 	DispatchKeyValue(vehicle, "vehiclescript", script);
 }

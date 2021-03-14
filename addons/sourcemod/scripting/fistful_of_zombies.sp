@@ -9,8 +9,6 @@
  *
  */
 
-#pragma semicolon 1
-
 #include <sourcemod>
 #include <sdktools>
 #include <sdkhooks>
@@ -18,117 +16,116 @@
 #undef REQUIRE_EXTENSIONS
 #tryinclude <steamworks>
 
-#define PLUGIN_VERSION		"1.1.2"
-#define PLUGIN_NAME         "[FoF] Fistful Of Zombies"
-#define DEBUG				true
+#pragma semicolon 1
+#pragma newdecls required
 
-#define MAX_KEY_LENGTH	    128
-#define MAX_TABLE   	    128
-#define INFECTION_LIMIT     100.0
-#define VOICE_SCALE         12.0
+#define PLUGIN_VERSION "1.10.0"
+#define PLUGIN_NAME "[FoF] Fistful Of Zombies"
 
-#define GAME_DESCRIPTION    "Fistful Of Zombies"
-#define SOUND_ROUNDSTART    "music/standoff1.mp3"
-#define SOUND_STINGER       "music/kill1.wav"
-#define SOUND_NOPE          "player/voice/no_no1.wav"
+#define MAX_KEY_LENGTH 128
+#define MAX_TABLE 128
+#define INFECTION_LIMIT 100.0
+#define VOICE_SCALE 12.0
 
-#define TEAM_HUMAN              2   //Vigilantes
-#define TEAM_HUMAN_STR          "2"
-#define INFO_PLAYER_HUMAN       "info_player_vigilante"
-#define ON_NO_HUMAN_ALIVE       "OnNoVigAlive"
-#define INPUT_HUMAN_VICTORY     "InputVigVictory"
+#define GAME_DESCRIPTION "Fistful Of Zombies"
+#define SOUND_ROUNDSTART "music/standoff1.mp3"
+#define SOUND_STINGER "music/kill1.wav"
+#define SOUND_NOPE "player/voice/no_no1.wav"
 
-#define TEAM_ZOMBIE             3   //Desperados
-#define TEAM_ZOMBIE_STR         "3"
-#define INFO_PLAYER_ZOMBIE      "info_player_desperado"
-#define ON_NO_ZOMBIE_ALIVE      "OnNoDespAlive"
-#define INPUT_ZOMBIE_VICTORY    "InputDespVictory"
+#define TEAM_HUMAN 2  // Vigilantes
+#define TEAM_HUMAN_STR "2"
+#define INFO_PLAYER_HUMAN "info_player_vigilante"
+#define ON_NO_HUMAN_ALIVE "OnNoVigAlive"
+#define INPUT_HUMAN_VICTORY "InputVigVictory"
 
-new Handle:g_Cvar_Enabled = INVALID_HANDLE;
-new Handle:g_Cvar_Config = INVALID_HANDLE;
-new Handle:g_Cvar_RoundTime = INVALID_HANDLE;
-new Handle:g_Cvar_RespawnTime = INVALID_HANDLE;
-new Handle:g_Cvar_Ratio = INVALID_HANDLE;
-new Handle:g_Cvar_Infection = INVALID_HANDLE;
+#define TEAM_ZOMBIE 3  // Desperados
+#define TEAM_ZOMBIE_STR "3"
+#define INFO_PLAYER_ZOMBIE "info_player_desperado"
+#define ON_NO_ZOMBIE_ALIVE "OnNoDespAlive"
+#define INPUT_ZOMBIE_VICTORY "InputDespVictory"
 
-new Handle:g_Cvar_TeambalanceAllowed = INVALID_HANDLE;
-new Handle:g_Cvar_TeamsUnbalanceLimit = INVALID_HANDLE;
-new Handle:g_Cvar_Autoteambalance = INVALID_HANDLE;
+ConVar g_EnabledCvar;
+ConVar g_ConfigFileCvar;
+ConVar g_RoundTimeCvar;
+ConVar g_RespawnTimeCvar;
+ConVar g_RatioCvar;
+ConVar g_InfectionCvar;
 
-new Handle:g_GearPrimaryTable = INVALID_HANDLE;
-new g_GearPrimaryTotalWeight;
-new bool:g_GivenPrimary[MAXPLAYERS] = {false, ...};
+ConVar g_TeambalanceAllowedCvar;
+ConVar g_TeamsUnbalanceLimitCvar;
+ConVar g_AutoteambalanceCvar;
 
-new Handle:g_GearSecondaryTable = INVALID_HANDLE;
-new g_GearSecondaryTotalWeight;
-new bool:g_GivenSecondary[MAXPLAYERS] = {false, ...};
+KeyValues g_GearPrimaryTable;
+int g_GearPrimaryTotalWeight;
+bool g_GivenPrimary[MAXPLAYERS+1] = {false, ...};
 
-new Handle:g_LootTable = INVALID_HANDLE;
-new g_LootTotalWeight;
+KeyValues g_GearSecondaryTable;
+int g_GearSecondaryTotalWeight;
+bool g_GivenSecondary[MAXPLAYERS+1] = {false, ...};
 
-new g_Teamplay = INVALID_ENT_REFERENCE;
-new bool:g_UndoTeamplayDescription = false;
+KeyValues g_LootTable;
+int g_LootTotalWeight;
 
-new g_Model_Vigilante;
-new g_Model_Desperado;
-new g_Model_Bandido;
-new g_Model_Ranger;
-new g_Model_Ghost;
-//new g_Model_Skeleton;
-new g_Model_Zombie;
-//new g_Model_Barrel;
-//new g_Model_Train;
+int g_TeamplayEntity = INVALID_ENT_REFERENCE;
+bool g_AutoSetGameDescription = false;
 
-//A priority scaling for assigning to the human team;  a higher value has a
-//higher priority for joining humans.
-new g_HumanPriority[MAXPLAYERS] = {0, ...};
+int g_VigilanteModelIndex;
+int g_DesperadoModelIndex;
+int g_BandidoModelIndex;
+int g_RangerModelIndex;
+int g_ZombieModelIndex;
+
+// a priority scaling for assigning to the human team;  a higher value has a
+// higher priority for joining humans.
+int g_HumanPriority[MAXPLAYERS+1] = {0, ...};
 
 enum FoZRoundState
 {
-  RoundPre,
-  RoundGrace,
-  RoundActive,
-  RoundEnd
+    RoundPre,
+    RoundGrace,
+    RoundActive,
+    RoundEnd
 }
-new FoZRoundState:g_RoundState = RoundPre;
+FoZRoundState g_RoundState = RoundPre;
 
-public Plugin:myinfo =
+public Plugin myinfo =
 {
     name = PLUGIN_NAME,
     author = "CrimsonTautology",
     description = "Zombie Survival for Fistful of Frags",
     version = PLUGIN_VERSION,
-    url = "https://github.com/CrimsonTautology/sm_fistful_of_zombies"
+    url = "https://github.com/CrimsonTautology/sm-fistful-of-zombies"
 };
 
-public OnPluginStart()
+public void OnPluginStart()
 {
-    CreateConVar("foz_version", PLUGIN_VERSION, PLUGIN_NAME, FCVAR_SPONLY | FCVAR_REPLICATED | FCVAR_NOTIFY | FCVAR_DONTRECORD);
+    CreateConVar("foz_version", PLUGIN_VERSION, PLUGIN_NAME,
+            FCVAR_SPONLY | FCVAR_REPLICATED | FCVAR_NOTIFY | FCVAR_DONTRECORD);
 
-    g_Cvar_Enabled = CreateConVar(
+    g_EnabledCvar = CreateConVar(
             "foz_enabled",
             "1",
             "Whether or not Fistful of Zombies is enabled");
 
-    g_Cvar_Config = CreateConVar(
+    g_ConfigFileCvar = CreateConVar(
             "foz_config",
-            "fistful_of_zombies.txt",
+            "configs/fistful_of_zombies.txt",
             "Location of the Fistful of Zombies configuration file",
             0);
 
-    g_Cvar_RoundTime = CreateConVar(
+    g_RoundTimeCvar = CreateConVar(
             "foz_round_time",
             "120",
-            "How long surviors have to survive in seconds to win a round in Fistful of Zombies",
+            "How long survivors have to survive in seconds to win a round in Fistful of Zombies",
             0);
 
-    g_Cvar_RespawnTime = CreateConVar(
+    g_RespawnTimeCvar = CreateConVar(
             "foz_respawn_time",
             "15",
             "How long zombies have to wait before respawning in Fistful of Zombies",
             0);
 
-    g_Cvar_Ratio = CreateConVar(
+    g_RatioCvar = CreateConVar(
             "foz_ratio",
             "0.65",
             "Percentage of players that start as human.",
@@ -136,7 +133,7 @@ public OnPluginStart()
             true, 0.01,
             true, 1.0);
 
-    g_Cvar_Infection = CreateConVar(
+    g_InfectionCvar = CreateConVar(
             "foz_infection",
             "0.10",
             "Chance that a human will be infected when punched by a zombie.  Value is scaled such that more human players increase the chance",
@@ -150,20 +147,26 @@ public OnPluginStart()
     HookEvent("round_end", Event_RoundEnd);
     HookEvent("player_team", Event_PlayerTeam, EventHookMode_Pre);
 
-    RegAdminCmd("foz_dump", Command_Dump, ADMFLAG_ROOT, "TEST: Output information about the current game to console");
+    RegAdminCmd("foz_dump", Command_Dump, ADMFLAG_ROOT,
+            "Debug: Output information about the current game to console");
+
+    RegAdminCmd("foz_reload", Command_Reload, ADMFLAG_ROOT,
+            "Force a reload of the configuration file");
 
     AddCommandListener(Command_JoinTeam, "jointeam");
 
-    g_Cvar_TeambalanceAllowed = FindConVar("fof_sv_teambalance_allowed");
-    g_Cvar_TeamsUnbalanceLimit = FindConVar("mp_teams_unbalance_limit");
-    g_Cvar_Autoteambalance = FindConVar("mp_autoteambalance");
+    g_TeambalanceAllowedCvar = FindConVar("fof_sv_teambalance_allowed");
+    g_TeamsUnbalanceLimitCvar = FindConVar("mp_teams_unbalance_limit");
+    g_AutoteambalanceCvar = FindConVar("mp_autoteambalance");
 
     AddNormalSoundHook(SoundCallback);
+
+    InitializeFOZ();
 }
 
-public OnClientPostAdminCheck(client)
+public void OnClientPutInServer(int client)
 {
-    if(!IsEnabled()) return;
+    if (!IsEnabled()) return;
 
     SDKHook(client, SDKHook_WeaponCanUse, Hook_OnWeaponCanUse);
     SDKHook(client, SDKHook_OnTakeDamage, Hook_OnTakeDamage);
@@ -171,62 +174,56 @@ public OnClientPostAdminCheck(client)
     g_HumanPriority[client] = 0;
 }
 
-public OnClientDisconnect(client)
+public void OnMapStart()
 {
-    if(!IsEnabled()) return;
-}
+    if (!IsEnabled()) return;
 
-public OnMapStart()
-{
-    if(!IsEnabled()) return;
+    char tmp[PLATFORM_MAX_PATH];
 
-    //Load configuration
-    decl String:file[PLATFORM_MAX_PATH];
-    decl String:tmp[PLATFORM_MAX_PATH];
-    GetConVarString(g_Cvar_Config, file, sizeof(file));
-    LoadFOZFile(file,
-            g_GearPrimaryTable, g_GearPrimaryTotalWeight,
-            g_GearSecondaryTable, g_GearSecondaryTotalWeight,
-            g_LootTable, g_LootTotalWeight
-            );
-
-    //Cache materials
+    // cache materials
     PrecacheSound(SOUND_ROUNDSTART, true);
     PrecacheSound(SOUND_STINGER, true);
     PrecacheSound(SOUND_NOPE, true);
 
-    //Precache zombie sounds
-    for (new i=1; i<=3; i++) {
+    // precache zombie sounds
+    for (int i = 1; i <= 3; i++)
+    {
         Format(tmp, sizeof(tmp), "npc/zombie/foot%d.wav", i);
         PrecacheSound(tmp, true);
     }
 
-    for (new i=1; i<=14; i++) {
+    for (int i = 1; i <= 14; i++)
+    {
         Format(tmp, sizeof(tmp), "npc/zombie/moan-%02d.wav", i);
         PrecacheSound(tmp, true);
     }
 
-    for (new i=1; i<=4; i++) {
+    for (int i = 1; i <= 4; i++)
+    {
         Format(tmp, sizeof(tmp), "npc/zombie/zombie_chase-%d.wav", i);
         PrecacheSound(tmp, true);
     }
 
-    for (new i=1; i<=4; i++) {
+    for (int i = 1; i <= 4; i++)
+    {
         Format(tmp, sizeof(tmp), "npc/zombie/moan_loop%d.wav", i);
         PrecacheSound(tmp, true);
     }
 
-    for (new i=1; i<=2; i++) {
+    for (int i = 1; i <= 2; i++)
+    {
         Format(tmp, sizeof(tmp), "npc/zombie/claw_miss%d.wav", i);
         PrecacheSound(tmp, true);
     }
 
-    for (new i=1; i<=3; i++) {
+    for (int i = 1; i <= 3; i++)
+    {
         Format(tmp, sizeof(tmp), "npc/zombie/claw_strike%d.wav", i);
         PrecacheSound(tmp, true);
     }
 
-    for (new i=1; i<=3; i++) {
+    for (int i = 1; i <= 3; i++)
+    {
         Format(tmp, sizeof(tmp), "npc/zombie/zombie_die%d.wav", i);
         PrecacheSound(tmp, true);
     }
@@ -234,56 +231,50 @@ public OnMapStart()
     PrecacheSound("vehicles/train/whistle.wav", true);
     PrecacheSound("player/fallscream1.wav", true);
 
-    g_Model_Vigilante = PrecacheModel("models/playermodels/player1.mdl");
-    g_Model_Desperado = PrecacheModel("models/playermodels/player2.mdl");
-    g_Model_Bandido = PrecacheModel("models/playermodels/bandito.mdl");
-    g_Model_Ranger = PrecacheModel("models/playermodels/frank.mdl");
-    g_Model_Ghost = PrecacheModel("models/npc/ghost.mdl");
-    //g_Model_Skeleton = PrecacheModel("models/skeleton.mdl");
-    g_Model_Zombie = PrecacheModel("models/zombies/fof_zombie.mdl");
-    //g_Model_Barrel = PrecacheModel("models/elpaso/barrel1_explosive.mdl");
-    //g_Model_Train = PrecacheModel("models/props/forest/train.mdl");
+    g_VigilanteModelIndex = PrecacheModel("models/playermodels/player1.mdl");
+    g_DesperadoModelIndex = PrecacheModel("models/playermodels/player2.mdl");
+    g_BandidoModelIndex = PrecacheModel("models/playermodels/bandito.mdl");
+    g_RangerModelIndex = PrecacheModel("models/playermodels/frank.mdl");
+    g_ZombieModelIndex = PrecacheModel("models/zombies/fof_zombie.mdl");
 
-    //Initial setup
+    // initial setup
     ConvertSpawns();
     ConvertWhiskey(g_LootTable, g_LootTotalWeight);
-    g_Teamplay = SpawnZombieTeamplay();
-    g_UndoTeamplayDescription = true;
+    g_TeamplayEntity = SpawnZombieTeamplayEntity();
+    g_AutoSetGameDescription = true;
 
     SetRoundState(RoundPre);
 
     CreateTimer(1.0, Timer_Repeat, .flags = TIMER_REPEAT|TIMER_FLAG_NO_MAPCHANGE);
 }
 
-public OnConfigsExecuted()
+public void OnConfigsExecuted()
 {
-    if(!IsEnabled()) return;
+    if (!IsEnabled()) return;
 
     SetGameDescription(GAME_DESCRIPTION);
     SetDefaultConVars();
 }
 
-public Action:Event_PlayerSpawn(Handle:event, const String:name[], bool:dontBroadcast)
+void Event_PlayerSpawn(Event event, const char[] name, bool dontBroadcast)
 {
-    if(!IsEnabled()) return Plugin_Continue;
+    if (!IsEnabled()) return;
 
-    new userid = GetEventInt(event, "userid");
+    int userid = event.GetInt("userid");
     RequestFrame(PlayerSpawnDelay, userid);
-
-    return Plugin_Continue;
 }
 
-public Event_PlayerDeath(Handle:event, const String:name[], bool:dontBroadcast)
+void Event_PlayerDeath(Event event, const char[] name, bool dontBroadcast)
 {
-    if(!IsEnabled()) return;
+    if (!IsEnabled()) return;
 
-    new userid = GetEventInt(event, "userid");
-    new client = GetClientOfUserId(userid);
+    int userid = event.GetInt("userid");
+    int client = GetClientOfUserId(userid);
 
-    //A dead human becomes a zombie
-    if(IsHuman(client))
+    // a dead human becomes a zombie
+    if (IsHuman(client))
     {
-        //Announce the death
+        // announce the death
         PrintCenterTextAll("%N has turned...", client);
         EmitSoundToAll(SOUND_STINGER, .flags = SND_CHANGEPITCH, .pitch = 80);
 
@@ -291,12 +282,12 @@ public Event_PlayerDeath(Handle:event, const String:name[], bool:dontBroadcast)
     }
 }
 
-public Event_RoundStart(Event:event, const String:name[], bool:dontBroadcast)
+void Event_RoundStart(Event event, const char[] name, bool dontBroadcast)
 {
-    if(!IsEnabled()) return;
+    if (!IsEnabled()) return;
 
     SetRoundState(RoundGrace);
-    CreateTimer(10.0, Timer_EndGrace, TIMER_FLAG_NO_MAPCHANGE);  
+    CreateTimer(10.0, Timer_EndGrace, TIMER_FLAG_NO_MAPCHANGE);
 
     ConvertWhiskey(g_LootTable, g_LootTotalWeight);
     RemoveCrates();
@@ -305,26 +296,25 @@ public Event_RoundStart(Event:event, const String:name[], bool:dontBroadcast)
     SetDefaultConVars();
 }
 
-
-public Event_RoundEnd(Event:event, const String:name[], bool:dontBroadcast)
+void Event_RoundEnd(Event event, const char[] name, bool dontBroadcast)
 {
-    if(!IsEnabled()) return;
+    if (!IsEnabled()) return;
 
     SetRoundState(RoundEnd);
     RewardSurvivingHumans();
 }
 
-public Action:Event_PlayerTeam(Event:event, const String:name[], bool:dontBroadcast)
+Action Event_PlayerTeam(Event event, const char[] name, bool dontBroadcast)
 {
-    if(!IsEnabled()) return Plugin_Continue;
+    if (!IsEnabled()) return Plugin_Continue;
 
-    new userid = GetEventInt(event, "userid");
-    new team   = GetEventInt(event, "team");
+    int userid = event.GetInt("userid");
+    int team = event.GetInt("team");
 
-    SetEventBroadcast(event, true);
+    event.BroadcastDisabled = true;
 
-    //If A player joins in late as a human force them to be a zombie
-    if(team == TEAM_HUMAN && GetRoundState() == RoundActive)
+    // if A player joins in late as a human force them to be a zombie
+    if (team == TEAM_HUMAN && GetRoundState() == RoundActive)
     {
         RequestFrame(BecomeZombieDelay, userid);
         return Plugin_Handled;
@@ -333,61 +323,63 @@ public Action:Event_PlayerTeam(Event:event, const String:name[], bool:dontBroadc
     return Plugin_Continue;
 }
 
-public PlayerSpawnDelay(any:userid)
+void PlayerSpawnDelay(int userid)
 {
-    new client = GetClientOfUserId(userid);
+    int client = GetClientOfUserId(userid);
 
-    if(!IsEnabled()) return;
-    if(!Client_IsIngame(client)) return;
-    if(!IsPlayerAlive(client)) return;
+    if (!IsEnabled()) return;
+    if (!Client_IsIngame(client)) return;
+    if (!IsPlayerAlive(client)) return;
 
     g_GivenPrimary[client] = false;
     g_GivenSecondary[client] = false;
 
-    if(IsHuman(client))
+    if (IsHuman(client))
     {
         RandomizeModel(client);
 
-        //If a player spawns as human give them their primary and secondary gear
-        CreateTimer(0.2, Timer_GiveSecondaryWeapon, userid, TIMER_FLAG_NO_MAPCHANGE);  
-        CreateTimer(0.3, Timer_GivePrimaryWeapon, userid, TIMER_FLAG_NO_MAPCHANGE);  
+        // if a player spawns as human give them their primary and secondary
+        // gear
+        CreateTimer(0.2, Timer_GiveSecondaryWeapon, userid,
+                TIMER_FLAG_NO_MAPCHANGE);
+        CreateTimer(0.3, Timer_GivePrimaryWeapon, userid,
+                TIMER_FLAG_NO_MAPCHANGE);
 
-        PrintCenterText(client, "Survive the zombie plague!"); 
-
-    } else if(IsZombie(client))
+        PrintCenterText(client, "Survive the zombie plague!");
+    }
+    else if (IsZombie(client))
     {
-        //Force client model
-        //Entity_SetModelIndex(client, g_Model_Zombie);
+        // force client model
         RandomizeModel(client);
         StripWeapons(client);
         EmitZombieYell(client);
 
-        PrintCenterText(client, "Ughhhh..... BRAINNNSSSS"); 
-
+        PrintCenterText(client, "Ughhhh..... BRAINNNSSSS");
     }
 }
 
-public BecomeZombieDelay(any:userid)
+void BecomeZombieDelay(int userid)
 {
-    new client = GetClientOfUserId(userid);
+    int client = GetClientOfUserId(userid);
 
-    if(!IsEnabled()) return;
-    if(!Client_IsIngame(client)) return;
+    if (!IsEnabled()) return;
+    if (!Client_IsIngame(client)) return;
 
     JoinZombieTeam(client);
 }
 
-public Action:Timer_GivePrimaryWeapon(Handle:timer, any:userid)
+Action Timer_GivePrimaryWeapon(Handle timer, int userid)
 {
-    new client = GetClientOfUserId(userid);
+    int client = GetClientOfUserId(userid);
 
-    if(!IsEnabled()) return Plugin_Handled;
-    if(!Client_IsIngame(client)) return Plugin_Handled;
-    if(IsZombie(client)) return Plugin_Handled;
-    if(g_GivenPrimary[client]) return Plugin_Handled;
-    new String:weapon[MAX_KEY_LENGTH];
+    if (!IsEnabled()) return Plugin_Handled;
+    if (!Client_IsIngame(client)) return Plugin_Handled;
+    if (IsZombie(client)) return Plugin_Handled;
+    if (g_GivenPrimary[client]) return Plugin_Handled;
+    char weapon[MAX_KEY_LENGTH];
 
-    GetRandomValueFromTable(g_GearPrimaryTable, g_GearPrimaryTotalWeight, weapon, sizeof(weapon));
+    GetRandomValueFromTable(g_GearPrimaryTable, g_GearPrimaryTotalWeight,
+            weapon, sizeof(weapon));
     GivePlayerItem(client, weapon);
     UseWeapon(client, weapon);
 
@@ -396,18 +388,19 @@ public Action:Timer_GivePrimaryWeapon(Handle:timer, any:userid)
     return Plugin_Handled;
 }
 
-public Action:Timer_GiveSecondaryWeapon(Handle:timer, any:userid)
+Action Timer_GiveSecondaryWeapon(Handle timer, int userid)
 {
-    new client = GetClientOfUserId(userid);
+    int client = GetClientOfUserId(userid);
 
-    if(!IsEnabled()) return Plugin_Handled;
-    if(!Client_IsIngame(client)) return Plugin_Handled;
-    if(IsZombie(client)) return Plugin_Handled;
-    if(g_GivenSecondary[client]) return Plugin_Handled;
+    if (!IsEnabled()) return Plugin_Handled;
+    if (!Client_IsIngame(client)) return Plugin_Handled;
+    if (IsZombie(client)) return Plugin_Handled;
+    if (g_GivenSecondary[client]) return Plugin_Handled;
 
-    new String:weapon[MAX_KEY_LENGTH];
+    char weapon[MAX_KEY_LENGTH];
 
-    GetRandomValueFromTable(g_GearSecondaryTable, g_GearSecondaryTotalWeight, weapon, sizeof(weapon));
+    GetRandomValueFromTable(g_GearSecondaryTable, g_GearSecondaryTotalWeight,
+            weapon, sizeof(weapon));
     GivePlayerItem(client, weapon);
     UseWeapon(client, weapon, true);
 
@@ -416,59 +409,58 @@ public Action:Timer_GiveSecondaryWeapon(Handle:timer, any:userid)
     return Plugin_Handled;
 }
 
-public Action:Timer_EndGrace(Handle:timer)
+Action Timer_EndGrace(Handle timer)
 {
     SetRoundState(RoundActive);
 }
 
-public Action:Timer_Repeat(Handle:timer)
+Action Timer_Repeat(Handle timer)
 {
-    if(!IsEnabled()) return Plugin_Continue;
+    if (!IsEnabled()) return Plugin_Continue;
 
-    //NOTE: Spawning a teamplay entity seems to now change game description to
-    //Teamplay.  Need to re-set game description back to zombies next iteration.
-    if (g_UndoTeamplayDescription)
+    // NOTE: Spawning a teamplay entity seems to now change game description to
+    // Teamplay.  Need to re-set game description back to zombies next
+    // iteration.
+    if (g_AutoSetGameDescription)
     {
-         SetGameDescription(GAME_DESCRIPTION);
-         g_UndoTeamplayDescription = false;
+        SetGameDescription(GAME_DESCRIPTION);
+        g_AutoSetGameDescription = false;
     }
 
     RoundEndCheck();
 
-    for (new client=1; client <= MaxClients; client++)
+    for (int client = 1; client <= MaxClients; client++)
     {
-        if(!IsClientInGame(client)) continue;
+        if (!IsClientInGame(client)) continue;
 
-
-        if(IsHuman(client))
+        if (IsHuman(client))
         {
-            //No-op
-
-        }else if(IsZombie(client))
+            // no-op
+        }
+        else if (IsZombie(client))
         {
             StripWeapons(client);
         }
     }
 
-
     return Plugin_Handled;
 }
 
-public Action:Hook_OnWeaponCanUse(client, weapon)
+Action Hook_OnWeaponCanUse(int client, int weapon)
 {
-    if(!IsEnabled()) return Plugin_Continue;
+    if (!IsEnabled()) return Plugin_Continue;
 
-    //Block zombies from picking up guns
+    // block zombies from picking up guns
     if (IsZombie(client))
     {
-        decl String:class[MAX_KEY_LENGTH];
+        char class[MAX_KEY_LENGTH];
         GetEntityClassname(weapon, class, sizeof(class));
 
         if (!StrEqual(class, "weapon_fists"))
         {
             EmitSoundToClient(client, SOUND_NOPE);
-            PrintCenterText(client, "Zombies Can Not Use Guns"); 
-            PrintToChat(client, "Zombies Can Not Use Guns"); 
+            PrintCenterText(client, "Zombies Can Not Use Guns");
+            PrintToChat(client, "Zombies Can Not Use Guns");
 
             return Plugin_Handled;
         }
@@ -477,68 +469,74 @@ public Action:Hook_OnWeaponCanUse(client, weapon)
     return Plugin_Continue;
 }
 
-public Action:Hook_OnTakeDamage(victim, &attacker, &inflictor, &Float:damage, &damagetype, &weapon, Float:damageForce[3], Float:damagePosition[3], damagecustom)
+Action Hook_OnTakeDamage(int victim, int& attacker, int& inflictor,
+        float& damage, int& damagetype, int& weapon, float damageForce[3],
+        float damagePosition[3])
 {
-    if(!IsEnabled()) return Plugin_Continue;
-    if(!Client_IsIngame(attacker)) return Plugin_Continue;
-    if(!Client_IsIngame(victim)) return Plugin_Continue;
-    if(attacker == victim) return Plugin_Continue;
+    if (!IsEnabled()) return Plugin_Continue;
+    if (!Client_IsIngame(attacker)) return Plugin_Continue;
+    if (!Client_IsIngame(victim)) return Plugin_Continue;
+    if (attacker == victim) return Plugin_Continue;
 
-    if(weapon > 0 && IsHuman(victim) && IsZombie(attacker))
+    if (weapon > 0 && IsHuman(victim) && IsZombie(attacker))
     {
-        decl String:class[MAX_KEY_LENGTH];
+        char class[MAX_KEY_LENGTH];
         GetEntityClassname(weapon, class, sizeof(class));
-        if(StrEqual(class, "weapon_fists"))
+        if (StrEqual(class, "weapon_fists"))
         {
-            //Random chance that you can be infected
-            if(InfectionChanceRoll())
+            // random chance that you can be infected
+            if (InfectionChanceRoll())
             {
                 BecomeInfected(victim);
             }
         }
 
-    } else if(IsHuman(victim) && IsHuman(attacker))
+    }
+    else if (IsHuman(victim) && IsHuman(attacker))
     {
-        //Reduce the damage of friendly fire
-        damage = Float:RoundToCeil(damage / 10.0);
+        // reduce the damage of friendly fire
+        damage = view_as<float>(RoundToCeil(damage / 10.0));
     }
 
     return Plugin_Continue;
 }
 
-public Action:Command_JoinTeam(client, const String:command[], args) 
-{ 
-    if(!IsEnabled()) return Plugin_Continue;
-    if(!Client_IsIngame(client)) return Plugin_Continue; 
+Action Command_JoinTeam(int client, const char[] command, int argc)
+{
+    if (!IsEnabled()) return Plugin_Continue;
+    if (!Client_IsIngame(client)) return Plugin_Continue;
 
-    decl String:cmd[32];
-    GetCmdArg(1, cmd, sizeof(cmd));
+    char arg[32];
+    GetCmdArg(1, arg, sizeof(arg));
 
-    if(GetRoundState() == RoundGrace)
+    if (GetRoundState() == RoundGrace)
     {
-        //Block players switching to humans
-        if(StrEqual(cmd, TEAM_HUMAN_STR, false) || StrEqual(cmd, "auto", false))
+        // block players switching to humans
+        if (StrEqual(arg, TEAM_HUMAN_STR, false) ||
+                StrEqual(arg, "auto", false))
         {
             EmitSoundToClient(client, SOUND_NOPE);
-            PrintCenterText(client, "I can't let you do that, starfox!"); 
-            PrintToChat(client, "I can't let you do that, starfox!"); 
+            PrintCenterText(client, "You cannot change teams");
+            PrintToChat(client, "You cannot change teams");
             return Plugin_Handled;
         }
     }
 
-    if(GetRoundState() == RoundActive)
+    if (GetRoundState() == RoundActive)
     {
-        //If attempting to join human team or random then join zombie team
-        if(StrEqual(cmd, TEAM_HUMAN_STR, false) || StrEqual(cmd, "auto", false))
+        // if attempting to join human team or random then join zombie team
+        if (StrEqual(arg, TEAM_HUMAN_STR, false) ||
+                StrEqual(arg, "auto", false))
         {
             return Plugin_Handled;
         }
-        //If attempting to join zombie team or spectator, let them
-        else if(StrEqual(cmd, TEAM_ZOMBIE_STR, false) || StrEqual(cmd, "spectate", false))
+        // if attempting to join zombie team or spectator, let them
+        else if (StrEqual(arg, TEAM_ZOMBIE_STR, false) ||
+                StrEqual(arg, "spectate", false))
         {
             return Plugin_Continue;
         }
-        //Prevent joining any other team
+        // prevent joining any other team
         else
         {
             return Plugin_Handled;
@@ -546,49 +544,58 @@ public Action:Command_JoinTeam(client, const String:command[], args)
     }
 
     return Plugin_Continue;
-}  
+}
 
-public Action:SoundCallback(clients[64], &numClients, String:sample[PLATFORM_MAX_PATH], &entity, &channel, &Float:volume, &level, &pitch, &flags)
+Action SoundCallback(int clients[MAXPLAYERS], int &numClients,
+        char sample[PLATFORM_MAX_PATH], int &entity, int &channel,
+        float &volume, int &level, int &pitch, int &flags,
+        char soundEntry[PLATFORM_MAX_PATH], int &seed)
 {
-    if (entity > 0 && entity <= MaxClients)
+    if (0 < entity <= MaxClients)
     {
-        //Change the voice of zombie players
-        if(IsZombie(entity))
+        // change the voice of zombie players
+        if (IsZombie(entity))
         {
-            //Format(sample, sizeof(sample), "vehicles/train/whistle.wav");
-            //Format(sample, sizeof(sample), "player/fallscream1.wav");
-
-            //Change to zombie footsteps
-            if(StrContains(sample, "player/footsteps") == 0)
+            // change to zombie footsteps
+            if (StrContains(sample, "player/footsteps") == 0)
             {
-                Format(sample, sizeof(sample), "npc/zombie/foot%d.wav", GetRandomInt(1, 3));
+                Format(sample, sizeof(sample), "npc/zombie/foot%d.wav",
+                        GetRandomInt(1, 3));
                 return Plugin_Changed;
             }
 
-            //Change zombie punching
-            if(StrContains(sample, "weapons/fists/fists_punch") == 0)
+            // change zombie punching
+            if (StrContains(sample, "weapons/fists/fists_punch") == 0)
             {
-                Format(sample, sizeof(sample), "npc/zombie/claw_strike%d.wav", GetRandomInt(1, 3));
-                return Plugin_Changed;
-            }
-            
-            //Change zombie punch missing
-            if(StrContains(sample, "weapons/fists/fists_miss") == 0)
-            {
-                Format(sample, sizeof(sample), "npc/zombie/claw_miss%d.wav", GetRandomInt(1, 2));
+                Format(sample, sizeof(sample), "npc/zombie/claw_strike%d.wav",
+                        GetRandomInt(1, 3));
                 return Plugin_Changed;
             }
 
-            //Change zombie death sound
-            if(StrContains(sample, "player/voice/pain/pl_death") == 0 || StrContains(sample, "player/voice2/pain/pl_death") == 0 || StrContains(sample, "player/voice4/pain/pl_death") == 0 || StrContains(sample, "npc/mexican/death") == 0)
+            // change zombie punch missing
+            if (StrContains(sample, "weapons/fists/fists_miss") == 0)
             {
-                Format(sample, sizeof(sample), "npc/zombie/zombie_die%d.wav", GetRandomInt(1, 3));
+                Format(sample, sizeof(sample), "npc/zombie/claw_miss%d.wav",
+                        GetRandomInt(1, 2));
                 return Plugin_Changed;
             }
 
-            if(StrContains(sample, "player/voice") == 0 || StrContains(sample, "npc/mexican") == 0)
+            // change zombie death sound
+            if (StrContains(sample, "player/voice/pain/pl_death") == 0 ||
+                    StrContains(sample, "player/voice2/pain/pl_death") == 0 ||
+                    StrContains(sample, "player/voice4/pain/pl_death") == 0 ||
+                    StrContains(sample, "npc/mexican/death") == 0)
             {
-                Format(sample, sizeof(sample), "npc/zombie/moan-%02d.wav", GetRandomInt(1, 14));
+                Format(sample, sizeof(sample), "npc/zombie/zombie_die%d.wav",
+                        GetRandomInt(1, 3));
+                return Plugin_Changed;
+            }
+
+            if (StrContains(sample, "player/voice") == 0 ||
+                    StrContains(sample, "npc/mexican") == 0)
+            {
+                Format(sample, sizeof(sample), "npc/zombie/moan-%02d.wav",
+                        GetRandomInt(1, 14));
                 return Plugin_Changed;
             }
         }
@@ -596,22 +603,23 @@ public Action:SoundCallback(clients[64], &numClients, String:sample[PLATFORM_MAX
     return Plugin_Continue;
 }
 
-public Action:Command_Dump(caller, args)
+Action Command_Dump(int caller, int args)
 {
-    new String:tmp[32], team, health;
+    char tmp[32];
+    int team, health;
     PrintToConsole(caller, "---------------------------------");
     PrintToConsole(caller, "RoundState: %d", g_RoundState);
     PrintToConsole(caller, "TEAM_ZOMBIE: %d, TEAM_HUMAN: %d", TEAM_ZOMBIE, TEAM_HUMAN);
     PrintToConsole(caller, "---------------------------------");
     PrintToConsole(caller, "team          health pri user");
-    for (new client=1; client <= MaxClients; client++)
+    for (int client = 1; client <= MaxClients; client++)
     {
-        if(!IsClientInGame(client)) continue;
+        if (!IsClientInGame(client)) continue;
 
         team = GetClientTeam(client);
         health = Entity_GetHealth(client);
         Team_GetName(team, tmp, sizeof(tmp));
-        
+
         PrintToConsole(caller, "%13s %6d %3d %L",
                 tmp,
                 health,
@@ -623,108 +631,135 @@ public Action:Command_Dump(caller, args)
     return Plugin_Handled;
 }
 
-LoadFOZFile(String:file[],
-        &Handle:gear_primary_table, &gear_primary_total_weight,
-        &Handle:gear_secondary_table, &gear_secondary_total_weight,
-        &Handle:loot_table, &loot_total_weight)
+Action Command_Reload(int caller, int args)
 {
-    decl String:path[PLATFORM_MAX_PATH];
-    BuildPath(Path_SM, path, sizeof(path), "configs/%s", file);
+    InitializeFOZ();
+    return Plugin_Handled;
+}
 
-    new Handle:config = CreateKeyValues("fistful_of_zombies");
-    if(!FileToKeyValues(config, path))
+void InitializeFOZ()
+{
+    // load configuration
+    char file[PLATFORM_MAX_PATH];
+    g_ConfigFileCvar.GetString(file, sizeof(file));
+
+    KeyValues config = LoadFOZFile(file);
+
+    delete g_LootTable;
+    g_LootTable = BuildWeightTable(
+            config, "loot", g_LootTotalWeight);
+
+    delete g_GearPrimaryTable;
+    g_GearPrimaryTable = BuildWeightTable(
+            config, "gear_primary", g_GearPrimaryTotalWeight);
+
+    delete g_GearSecondaryTable;
+    g_GearSecondaryTable = BuildWeightTable(
+            config, "gear_secondary", g_GearSecondaryTotalWeight);
+
+    delete config;
+}
+
+KeyValues LoadFOZFile(const char[] file)
+{
+    char path[PLATFORM_MAX_PATH];
+    BuildPath(Path_SM, path, sizeof(path), file);
+    WriteLog("LoadFOZFile %s", path);
+
+    KeyValues config = new KeyValues("fistful_of_zombies");
+    if (!config.ImportFromFile(path))
     {
         LogError("Could not read map rotation file \"%s\"", file);
         SetFailState("Could not read map rotation file \"%s\"", file);
-        return;
+        return null;
     }
 
-    //Read the default "loot" key and build the loot table
-    BuildWeightTable(config, "loot", loot_table, loot_total_weight);
-    BuildWeightTable(config, "gear_primary", gear_primary_table, gear_primary_total_weight);
-    BuildWeightTable(config, "gear_secondary", gear_secondary_table, gear_secondary_total_weight);
-
-    CloseHandle(config);
+    return config;
 }
 
-//Build a table for randomly selecting a weighted value
-BuildWeightTable(Handle:kv, const String:name[], &Handle:table, &total_weight)
+// build a table for randomly selecting a weighted value
+KeyValues BuildWeightTable(KeyValues config, const char[] name,
+        int& total_weight)
 {
-    decl String:key[MAX_KEY_LENGTH];
-    new weight;
+    char key[MAX_KEY_LENGTH];
+    int weight;
+    KeyValues table = new KeyValues(name);
 
-    if(table != INVALID_HANDLE) CloseHandle(table);
     total_weight = 0;
 
-    KvRewind(kv);
+    config.Rewind();
+    WriteLog("BuildWeightTable %s start", name);
 
-    if(KvJumpToKey(kv, name))
+    if (config.JumpToKey(name))
     {
-        table = CreateKeyValues(name);
-        KvCopySubkeys(kv, table);
+        table.Import(config);
 
-        KvGotoFirstSubKey(kv);
+        config.GotoFirstSubKey();
         do
         {
-            KvGetSectionName(kv, key, sizeof(key));
-            weight = KvGetNum(kv, "weight", 0);
+            config.GetSectionName(key, sizeof(key));
+            weight = config.GetNum("weight", 0);
 
-
-            //Ignore values that do not have a weight or 0 weight
-            if(weight > 0)
+            // ignore values that do not have a weight or 0 weight
+            if (weight > 0)
             {
                 total_weight += weight;
             }
+            WriteLog("BuildWeightTable %s key: %s, weight: %d",
+                    name, key, weight);
         }
-        while(KvGotoNextKey(kv));
+        while(config.GotoNextKey());
 
-    }else{
+    }
+    else
+    {
         LogError("A valid \"%s\" key was not defined", name);
         SetFailState("A valid \"%s\" key was not defined", name);
     }
+    WriteLog("BuildWeightTable %s end total_weight: %d", name, total_weight);
 
-    KvRewind(kv);
+    return table;
 }
 
-SetDefaultConVars()
+void SetDefaultConVars()
 {
-    SetConVarInt(g_Cvar_TeambalanceAllowed, 0, false, false);
-    SetConVarInt(g_Cvar_TeamsUnbalanceLimit, 0, false, false);
-    SetConVarInt(g_Cvar_Autoteambalance, 0, false, false);
+    g_TeambalanceAllowedCvar.SetInt(0, false, false);
+    g_TeamsUnbalanceLimitCvar.SetInt(0, false, false);
+    g_AutoteambalanceCvar.SetInt(0, false, false);
 }
 
-RemoveCrates()
+void RemoveCrates()
 {
     Entity_KillAllByClassName("fof_crate*");
 }
 
-RemoveTeamplayEntities()
+void RemoveTeamplayEntities()
 {
     Entity_KillAllByClassName("fof_buyzone");
 }
 
-//Change all info_player_fof spawn points to a round robin
-//info_player_desperado and info_player_vigilante.
-ConvertSpawns()
+// change all info_player_fof spawn points to a round robin
+// info_player_desperado and info_player_vigilante.
+void ConvertSpawns()
 {
-    new count = GetRandomInt(0, 1);
-    new spawn  = INVALID_ENT_REFERENCE;
-    new converted = INVALID_ENT_REFERENCE;
-    new Float:origin[3], Float:angles[3];
+    int count = GetRandomInt(0, 1);
+    int spawn = INVALID_ENT_REFERENCE;
+    int converted = INVALID_ENT_REFERENCE;
+    float origin[3], angles[3];
 
     while((spawn = FindEntityByClassname(spawn, "info_player_fof")) != INVALID_ENT_REFERENCE)
     {
-        //Get original's position and remove it
+        // get original's position and remove it
         Entity_GetAbsOrigin(spawn, origin);
         Entity_GetAbsAngles(spawn, angles);
         Entity_Kill(spawn);
 
-        //Spawn a replacement at the same position
+        // spawn a replacement at the same position
         converted = count % 2 == 0
             ? Entity_Create(INFO_PLAYER_HUMAN)
             : Entity_Create(INFO_PLAYER_ZOMBIE)
             ;
-        if(IsValidEntity(converted))
+        if (IsValidEntity(converted))
         {
             Entity_SetAbsOrigin(converted, origin);
             Entity_SetAbsAngles(converted, angles);
@@ -738,26 +773,27 @@ ConvertSpawns()
 
 }
 
-//Whiskey is used as the spawn points for the random loot accross the map.
-//Every whiskey entity is removed and replaced with a random item/weapon.
-ConvertWhiskey(Handle:loot_table, loot_total_weight)
+// whiskey is used as the spawn points for the random loot accross the map,
+// every whiskey entity is removed and replaced with a random item/weapon.
+void ConvertWhiskey(KeyValues loot_table, int loot_total_weight)
 {
-    decl String:loot[MAX_KEY_LENGTH];
-    new count = 0;
-    new whiskey  = INVALID_ENT_REFERENCE;
-    new converted = INVALID_ENT_REFERENCE;
-    new Float:origin[3], Float:angles[3];
+    char loot[MAX_KEY_LENGTH];
+    int count = 0;
+    int whiskey = INVALID_ENT_REFERENCE;
+    int converted = INVALID_ENT_REFERENCE;
+    float origin[3], angles[3];
 
     while((whiskey = FindEntityByClassname(whiskey, "item_whiskey")) != INVALID_ENT_REFERENCE)
     {
-        //Get original's position and remove it
+        // get original's position and remove it
         Entity_GetAbsOrigin(whiskey, origin);
         Entity_GetAbsAngles(whiskey, angles);
         Entity_Kill(whiskey);
 
-        //Spawn a replacement at the same position
-        GetRandomValueFromTable(loot_table, loot_total_weight, loot, sizeof(loot));
-        if(StrEqual(loot, "nothing", false)) continue;
+        // spawn a replacement at the same position
+        GetRandomValueFromTable(loot_table, loot_total_weight, loot,
+                sizeof(loot));
+        if (StrEqual(loot, "nothing", false)) continue;
 
         converted = Weapon_Create(loot, origin, angles);
         Entity_AddEFlags(converted, EFL_NO_GAME_PHYSICS_SIMULATION | EFL_DONTBLOCKLOS);
@@ -766,18 +802,17 @@ ConvertWhiskey(Handle:loot_table, loot_total_weight)
     }
 }
 
-//Spawn the fof_teamplay entity that will control the game's logic.
-SpawnZombieTeamplay()
+// spawn the fof_teamplay entity that will control the game's logic.
+int SpawnZombieTeamplayEntity()
 {
-    new String:tmp[512];
+    char tmp[512];
 
-    //First check if an fof_teamplay already exists
-    new ent = FindEntityByClassname(INVALID_ENT_REFERENCE, "fof_teamplay");
-    if(IsValidEntity(ent))
+    // first check if an fof_teamplay already exists
+    int ent = FindEntityByClassname(INVALID_ENT_REFERENCE, "fof_teamplay");
+    if (IsValidEntity(ent))
     {
         DispatchKeyValue(ent, "RespawnSystem", "1");
 
-        //Todo, cvar ExtraTime and RoundTime
         Format(tmp, sizeof(tmp),                 "!self,RoundTime,%d,0,-1", GetRoundTime());
         DispatchKeyValue(ent, "OnNewRound",      tmp);
         DispatchKeyValue(ent, "OnNewRound",      "!self,ExtraTime,15,0.1,-1");
@@ -794,8 +829,8 @@ SpawnZombieTeamplay()
 
     }
 
-    //If not create one
-    else if(!IsValidEntity(ent))
+    // if not create one
+    else if (!IsValidEntity(ent))
     {
         ent = CreateEntityByName("fof_teamplay");
         DispatchKeyValue(ent, "targetname", "tpzombie");
@@ -824,41 +859,41 @@ SpawnZombieTeamplay()
     return ent;
 }
 
-stock bool:IsEnabled()
+bool IsEnabled()
 {
-    return GetConVarBool(g_Cvar_Enabled);
+    return g_EnabledCvar.BoolValue;
 }
 
-stock bool:IsHuman(client)
+bool IsHuman(int client)
 {
     return GetClientTeam(client) == TEAM_HUMAN;
 }
 
-stock bool:IsZombie(client)
+bool IsZombie(int client)
 {
     return GetClientTeam(client) == TEAM_ZOMBIE;
 }
 
-stock JoinHumanTeam(client)
+void JoinHumanTeam(int client)
 {
     ChangeClientTeam(client, TEAM_HUMAN);
 }
 
-stock JoinZombieTeam(client)
+void JoinZombieTeam(int client)
 {
     ChangeClientTeam(client, TEAM_ZOMBIE);
 }
 
-stock RandomizeTeams()
+void RandomizeTeams()
 {
-    decl clients[MAXPLAYERS];
-    new client_count = 0, human_count, client;
-    new Float:ratio = GetConVarFloat(g_Cvar_Ratio);
+    int clients[MAXPLAYERS+1];
+    int client_count = 0, human_count, client;
+    float ratio = g_RatioCvar.FloatValue;
 
-    for(client = 1; client <= MaxClients; client++)
+    for (client = 1; client <= MaxClients; client++)
     {
-        if(!IsClientInGame(client)) continue;
-        if(!( IsZombie(client) || IsHuman(client) )) continue;
+        if (!IsClientInGame(client)) continue;
+        if (!(IsZombie(client) || IsHuman(client))) continue;
 
         clients[client_count] = client;
         client_count++;
@@ -866,18 +901,18 @@ stock RandomizeTeams()
 
     SortCustom1D(clients, client_count, Sort_HumanPriority);
 
-    //Calculate number of humans;  need at least one
+    // calculate number of humans;  need at least one
     human_count = RoundToFloor(client_count * ratio);
-    if(human_count == 0 && client_count > 0) human_count = 1;
+    if (human_count == 0 && client_count > 0) human_count = 1;
 
-    //Assign teams; modify priority for next round
-    for(new i = 0; i < human_count; i++)
+    // assign teams; modify priority for next round
+    for (int i = 0; i < human_count; i++)
     {
         client = clients[i];
         JoinHumanTeam(client);
         g_HumanPriority[client]--;
     }
-    for(new i = human_count; i < client_count; i++)
+    for (int i = human_count; i < client_count; i++)
     {
         client = clients[i];
         JoinZombieTeam(clients[i]);
@@ -885,133 +920,140 @@ stock RandomizeTeams()
     }
 }
 
-stock bool:GetRandomValueFromTable(Handle:table, total_weight, String:value[], length)
+bool GetRandomValueFromTable(KeyValues table, int total_weight, char[] value,
+        int length)
 {
-    new weight;
-    new rand = GetRandomInt(0, total_weight - 1);
+    int weight;
+    int rand = GetRandomInt(0, total_weight - 1);
 
-    KvRewind(table);
-    KvGotoFirstSubKey(table);
+    table.Rewind();
+    table.GotoFirstSubKey();
+    WriteLog("GetRandomValueFromTable total_weight: %d, rand: %d",
+            total_weight, rand);
     do
     {
-        KvGetSectionName(table, value, length);
-        weight = KvGetNum(table, "weight", 0);
-        if(weight <= 0) continue;
+        table.GetSectionName(value, length);
+        weight = table.GetNum("weight", 0);
+        WriteLog("GetRandomValueFromTable value: %s, weight: %d",
+                value, weight);
+        if (weight <= 0) continue;
 
-        if(rand < weight){
-            KvRewind(table);
+        if (rand < weight)
+        {
             return true;
         }
         rand -= weight;
     }
-    while(KvGotoNextKey(table));
-    KvRewind(table);
+    while(table.GotoNextKey());
 
     return false;
 }
 
-stock UseWeapon(client, const String:weapon[], bool second=false)
+void UseWeapon(int client, const char[] weapon, bool second=false)
 {
-    new String:tmp[MAX_KEY_LENGTH];
+    char tmp[MAX_KEY_LENGTH];
     Format(tmp, sizeof(tmp), "use %s%s", weapon, second ? "2" : "");
     ClientCommand(client, tmp);
 }
 
-stock StripWeapons(client)
+void StripWeapons(int client)
 {
-    new weapon_ent;
-    decl String:class_name[MAX_KEY_LENGTH];
-    new offs = FindSendPropInfo("CBasePlayer","m_hMyWeapons");
+    int weapon_ent;
+    char class_name[MAX_KEY_LENGTH];
+    int offs = FindSendPropInfo("CBasePlayer","m_hMyWeapons");
 
-    for(new i = 0; i <= 47; i++)
+    for (int i = 0; i <= 47; i++)
     {
         weapon_ent = GetEntDataEnt2(client,offs + (i * 4));
-        if(weapon_ent == -1) continue;
+        if (weapon_ent == -1) continue;
 
         GetEdictClassname(weapon_ent, class_name, sizeof(class_name));
-        if(StrEqual(class_name, "weapon_fists")) continue;
+        if (StrEqual(class_name, "weapon_fists")) continue;
 
         RemovePlayerItem(client, weapon_ent);
         RemoveEdict(weapon_ent);
     }
 }
 
-stock EmitZombieYell(client)
+void EmitZombieYell(int client)
 {
-    decl String:tmp[PLATFORM_MAX_PATH];
-    Format(tmp, sizeof(tmp), "npc/zombie/zombie_chase-%d.wav", GetRandomInt(1, 4));
-    EmitSoundToAll(tmp, client, SNDCHAN_AUTO, SNDLEVEL_SCREAMING, SND_CHANGEPITCH, SNDVOL_NORMAL, GetRandomInt(85, 110));
+    char tmp[PLATFORM_MAX_PATH];
+    Format(tmp, sizeof(tmp), "npc/zombie/zombie_chase-%d.wav",
+            GetRandomInt(1, 4));
+    EmitSoundToAll(tmp, client, SNDCHAN_AUTO, SNDLEVEL_SCREAMING,
+            SND_CHANGEPITCH, SNDVOL_NORMAL, GetRandomInt(85, 110));
 }
 
-stock RandomizeModel(client)
+void RandomizeModel(int client)
 {
-    new model;
+    int model;
 
-    if(IsHuman(client))
+    if (IsHuman(client))
     {
         model = GetRandomInt(0, 3);
         switch (model)
         {
-            case 0: { Entity_SetModelIndex(client, g_Model_Vigilante); }
-            case 1: { Entity_SetModelIndex(client, g_Model_Desperado); }
-            case 2: { Entity_SetModelIndex(client, g_Model_Bandido); }
-            case 3: { Entity_SetModelIndex(client, g_Model_Ranger); }
+            case 0: { Entity_SetModelIndex(client, g_VigilanteModelIndex); }
+            case 1: { Entity_SetModelIndex(client, g_DesperadoModelIndex); }
+            case 2: { Entity_SetModelIndex(client, g_BandidoModelIndex); }
+            case 3: { Entity_SetModelIndex(client, g_RangerModelIndex); }
         }
 
-    } else if(IsZombie(client))
+    }
+    else if (IsZombie(client))
     {
         model = GetRandomInt(0, 0);
         switch (model)
         {
-            case 0: { Entity_SetModelIndex(client, g_Model_Zombie); }
+            case 0: { Entity_SetModelIndex(client, g_ZombieModelIndex); }
         }
     }
 }
 
-stock GetRoundTime()
+int GetRoundTime()
 {
-    return GetConVarInt(g_Cvar_RoundTime);
+    return g_RoundTimeCvar.IntValue;
 }
 
-stock GetRespawnTime()
+int GetRespawnTime()
 {
-    return GetConVarInt(g_Cvar_RespawnTime);
+    return g_RespawnTimeCvar.IntValue;
 }
 
-stock SetRoundState(FoZRoundState:round_state)
+void SetRoundState(FoZRoundState round_state)
 {
     WriteLog("Set RoundState: %d", round_state);
     g_RoundState = round_state;
 }
 
-stock FoZRoundState:GetRoundState()
+FoZRoundState GetRoundState()
 {
     return g_RoundState;
 }
 
-stock bool:InfectionChanceRoll()
+bool InfectionChanceRoll()
 {
-    new humans = Team_GetClientCount(TEAM_HUMAN, CLIENTFILTER_ALIVE);
-    //Last human can't be infected
-    if(humans <= 1) return false;
+    int humans = Team_GetClientCount(TEAM_HUMAN, CLIENTFILTER_ALIVE);
+    // last human can't be infected
+    if (humans <= 1) return false;
 
-    new Float:chance = GetConVarFloat(g_Cvar_Infection);
+    float chance = g_InfectionCvar.FloatValue;
 
     return GetURandomFloat() < chance;
 }
 
-stock BecomeInfected(client)
+void BecomeInfected(int client)
 {
     Entity_ChangeOverTime(client, 0.1, InfectionStep);
 }
 
-stock InfectedToZombie(client)
+void InfectedToZombie(int client)
 {
     StripWeapons(client);
     UseWeapon(client, "weapon_fists");
 
     JoinZombieTeam(client);
-    Entity_SetModelIndex(client, g_Model_Zombie);
+    Entity_SetModelIndex(client, g_ZombieModelIndex);
 
     EmitZombieYell(client);
     SetEntPropFloat(client, Prop_Send, "m_flDrunkness", 0.0);
@@ -1020,33 +1062,33 @@ stock InfectedToZombie(client)
     EmitSoundToAll(SOUND_STINGER, .flags = SND_CHANGEPITCH, .pitch = 80);
 }
 
-public bool:InfectionStep(&client, &Float:interval, &currentCall)
+bool InfectionStep(int& client, float& interval, int& currentCall)
 {
-    //This steps through the process of an infected human to a zombie
-    //Takes 300 steps or 30 seconds
-    if(!IsEnabled()) return false;
-    if(!Client_IsIngame(client)) return false;
-    if(!IsPlayerAlive(client)) return false;
-    if(!IsHuman(client)) return false;
-    if(GetRoundState() != RoundActive) return false;
-    if(Team_GetClientCount(TEAM_HUMAN, CLIENTFILTER_ALIVE) <= 1) return false;
+    // this steps through the process of an infected human to a zombie takes
+    // 300 steps or 30 seconds
+    if (!IsEnabled()) return false;
+    if (!Client_IsIngame(client)) return false;
+    if (!IsPlayerAlive(client)) return false;
+    if (!IsHuman(client)) return false;
+    if (GetRoundState() != RoundActive) return false;
+    if (Team_GetClientCount(TEAM_HUMAN, CLIENTFILTER_ALIVE) <= 1) return false;
 
-    //Become drunk 2/3 of the way through
-    if(currentCall > 200)
+    // become drunk 2/3 of the way through
+    if (currentCall > 200)
     {
-        new Float:drunkness = GetEntPropFloat(client, Prop_Send, "m_flDrunkness");
+        float drunkness = GetEntPropFloat(client, Prop_Send, "m_flDrunkness");
         drunkness = currentCall * 1.0;
         SetEntPropFloat(client, Prop_Send, "m_flDrunkness", drunkness);
     }
 
-    //All the way through, change client into a zombie
-    if(currentCall > 300)
+    // all the way through, change client into a zombie
+    if (currentCall > 300)
     {
         InfectedToZombie(client);
         return false;
     }
 
-    if(currentCall > 250 && (2 * GetURandomFloat()) < (currentCall / 300.0))
+    if (currentCall > 250 && (2 * GetURandomFloat()) < (currentCall / 300.0))
     {
         FakeClientCommand(client, "vc 15");
     }
@@ -1054,53 +1096,43 @@ public bool:InfectionStep(&client, &Float:interval, &currentCall)
     return true;
 }
 
-stock RoundEndCheck()
+void RoundEndCheck()
 {
-    //Check if any Humans are alive and if not force zombies to win
-    //NOTE:  The fof_teamplay entity should be handling this but there are some
-    //cases where it does not work.
-    if(GetRoundState() == RoundActive
+    // check if any Humans are alive and if not force zombies to win
+    // NOTE:  The fof_teamplay entity should be handling this but there are
+    // some cases where it does not work.
+    if (GetRoundState() == RoundActive
             && Team_GetClientCount(TEAM_HUMAN, CLIENTFILTER_ALIVE) <= 0)
     {
-        AcceptEntityInput(g_Teamplay, INPUT_ZOMBIE_VICTORY);
+        AcceptEntityInput(g_TeamplayEntity, INPUT_ZOMBIE_VICTORY);
     }
 }
 
-stock BecomeGhost(client)
+int Sort_HumanPriority(int elem1, int elem2, const array[], Handle hndl)
 {
-    Entity_SetModelIndex(client, g_Model_Ghost);
-    StripWeapons(client);
-    SetEntityMoveType(client, MOVETYPE_FLY);
-    SetEntProp(client, Prop_Data, "m_MoveCollide", 1);
-    Entity_SetMaxHealth(client, 25);
-    ChangeEdictState(client);
+    if (g_HumanPriority[elem1] < g_HumanPriority[elem2]) return 1;
+    if (g_HumanPriority[elem1] > g_HumanPriority[elem2]) return -1;
+
+    return GetURandomFloat() < 0.5 ? 1 : -1;
 }
 
-public Sort_HumanPriority(elem1, elem2, const array[], Handle:hndl)
+void RewardSurvivingHumans()
 {
-    if(g_HumanPriority[elem1] < g_HumanPriority[elem2]) return  1;
-    if(g_HumanPriority[elem1] > g_HumanPriority[elem2]) return  -1;
+    // Called at round end to give rewards to surviving humans.  Currently used
+    // to pump their priority by one so they have a better chance to be human
+    // next round.
 
-    return GetURandomFloat() < 0.5 ? 1 : -1;  
-}
-
-public RewardSurvivingHumans()
-{
-    //Called at round end to give rewards to surviving humans.  Currently used
-    //to pump their priority by one so they have a better chance to be human
-    //next round.
-
-    for(new client = 0; client < MaxClients; client++)
+    for (int client = 1; client <= MaxClients; client++)
     {
-        if(!Client_IsIngame(client)) continue;
-        if(!IsPlayerAlive(client)) continue;
-        if(!IsHuman(client)) continue;
+        if (!Client_IsIngame(client)) continue;
+        if (!IsPlayerAlive(client)) continue;
+        if (!IsHuman(client)) continue;
 
         g_HumanPriority[client]++;
     }
 }
 
-stock bool:SetGameDescription(String:description[])
+bool SetGameDescription(const char[] description)
 {
 #if defined _SteamWorks_Included
     return SteamWorks_SetGameDescription(description);
@@ -1109,14 +1141,11 @@ stock bool:SetGameDescription(String:description[])
 #endif
 }
 
-stock WriteLog(const String:format[], any:... )
+stock void WriteLog(const char[] format, any ...)
 {
 #if defined DEBUG
-    if(format[0] != '\0')
-    {
-        decl String:buf[2048];
-        VFormat(buf, sizeof(buf), format, 2 );
-        PrintToServer("[FoZ] %s", buf);
-    }
+    char buf[2048];
+    VFormat(buf, sizeof(buf), format, 2);
+    PrintToServer("[FOZ - %.3f] %s", GetGameTime(), buf);
 #endif
 }
