@@ -8,6 +8,7 @@
 
 Fistful of Zombies; a custom zombie survival game mode for Fistful of Frags.
 
+![Screenshot of the Fistful of Zombies](/.github/foz-screenshot-1.jpg?raw=true "Screnshot 1")
 
 ## Requirements
 * [SourceMod](https://www.sourcemod.net/) 1.10 or later
