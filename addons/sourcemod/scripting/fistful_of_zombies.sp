@@ -22,7 +22,7 @@
 #pragma semicolon 1
 #pragma newdecls required
 
-#define PLUGIN_VERSION "1.10.0"
+#define PLUGIN_VERSION "1.10.1"
 #define PLUGIN_NAME "[FoF] Fistful Of Zombies"
 
 #define MAX_KEY_LENGTH 128
