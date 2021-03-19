@@ -34,7 +34,7 @@ NOTE: All commands can be run from the in-game chat by replacing `sm_` with `!` 
 | Command | Accepts | Values | SM Admin Flag | Description |
 | --- | --- | --- | --- | --- |
 | `foz_dump` | None | None | Root | (debug) Output information about the current game to console |
-| `foz_reload` | None | None | Root | Force a reload fo the configuration file |
+| `foz_reload` | None | None | Root | Force a reload of the configuration file |
 
 ### Console Variables
 
