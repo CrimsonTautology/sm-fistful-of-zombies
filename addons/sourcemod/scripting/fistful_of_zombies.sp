@@ -22,7 +22,7 @@
 #pragma semicolon 1
 #pragma newdecls required
 
-#define PLUGIN_VERSION "1.10.0"
+#define PLUGIN_VERSION "1.10.1"
 #define PLUGIN_NAME "[FoF] Fistful Of Zombies"
 
 #define MAX_KEY_LENGTH 128
@@ -106,43 +106,38 @@ public void OnPluginStart()
             FCVAR_SPONLY | FCVAR_REPLICATED | FCVAR_NOTIFY | FCVAR_DONTRECORD);
 
     g_EnabledCvar = CreateConVar(
-            "foz_enabled",
-            "1",
-            "Whether or not Fistful of Zombies is enabled");
+            "foz_enabled", "1",
+            "Whether or not Fistful of Zombies is enabled",
+            FCVAR_NOTIFY, true, 0.0, true, 1.0);
 
     g_ConfigFileCvar = CreateConVar(
-            "foz_config",
-            "configs/fistful_of_zombies.txt",
+            "foz_config", "configs/fistful_of_zombies.txt",
             "Location of the Fistful of Zombies configuration file",
             0);
 
     g_RoundTimeCvar = CreateConVar(
-            "foz_round_time",
-            "120",
+            "foz_round_time", "120",
             "How long survivors have to survive in seconds to win a round in Fistful of Zombies",
-            0);
+            FCVAR_NOTIFY, true, 0.0);
 
     g_RespawnTimeCvar = CreateConVar(
-            "foz_respawn_time",
-            "15",
+            "foz_respawn_time", "15",
             "How long zombies have to wait before respawning in Fistful of Zombies",
-            0);
+            FCVAR_NOTIFY, true, 0.0);
 
     g_RatioCvar = CreateConVar(
-            "foz_ratio",
-            "0.65",
+            "foz_ratio", "0.65",
             "Percentage of players that start as human.",
-            0,
-            true, 0.01,
-            true, 1.0);
+            FCVAR_NOTIFY, true, 0.01, true, 1.0);
 
     g_InfectionCvar = CreateConVar(
-            "foz_infection",
-            "0.10",
+            "foz_infection", "0.10",
             "Chance that a human will be infected when punched by a zombie.  Value is scaled such that more human players increase the chance",
-            0,
-            true, 0.01,
-            true, 1.0);
+            FCVAR_NOTIFY, true, 0.01, true, 1.0);
+
+    g_TeambalanceAllowedCvar = FindConVar("fof_sv_teambalance_allowed");
+    g_TeamsUnbalanceLimitCvar = FindConVar("mp_teams_unbalance_limit");
+    g_AutoteambalanceCvar = FindConVar("mp_autoteambalance");
 
     HookEvent("player_spawn", Event_PlayerSpawn);
     HookEvent("player_death", Event_PlayerDeath);
@@ -150,21 +145,15 @@ public void OnPluginStart()
     HookEvent("round_end", Event_RoundEnd);
     HookEvent("player_team", Event_PlayerTeam, EventHookMode_Pre);
 
+    RegAdminCmd("foz_reload", Command_Reload, ADMFLAG_CONFIG,
+            "Force a reload of the configuration file");
+
     RegAdminCmd("foz_dump", Command_Dump, ADMFLAG_ROOT,
             "Debug: Output information about the current game to console");
 
-    RegAdminCmd("foz_reload", Command_Reload, ADMFLAG_ROOT,
-            "Force a reload of the configuration file");
-
     AddCommandListener(Command_JoinTeam, "jointeam");
 
-    g_TeambalanceAllowedCvar = FindConVar("fof_sv_teambalance_allowed");
-    g_TeamsUnbalanceLimitCvar = FindConVar("mp_teams_unbalance_limit");
-    g_AutoteambalanceCvar = FindConVar("mp_autoteambalance");
-
     AddNormalSoundHook(SoundCallback);
-
-    InitializeFOZ();
 }
 
 public void OnClientPutInServer(int client)
@@ -257,6 +246,7 @@ public void OnConfigsExecuted()
 
     SetGameDescription(GAME_DESCRIPTION);
     SetDefaultConVars();
+    InitializeFistfulOfZombies();
 }
 
 void Event_PlayerSpawn(Event event, const char[] name, bool dontBroadcast)
@@ -636,17 +626,17 @@ Action Command_Dump(int caller, int args)
 
 Action Command_Reload(int caller, int args)
 {
-    InitializeFOZ();
+    InitializeFistfulOfZombies();
     return Plugin_Handled;
 }
 
-void InitializeFOZ()
+void InitializeFistfulOfZombies()
 {
     // load configuration
     char file[PLATFORM_MAX_PATH];
     g_ConfigFileCvar.GetString(file, sizeof(file));
 
-    KeyValues config = LoadFOZFile(file);
+    KeyValues config = LoadFistfulOfZombiesFile(file);
 
     delete g_LootTable;
     g_LootTable = BuildWeightTable(
@@ -663,17 +653,17 @@ void InitializeFOZ()
     delete config;
 }
 
-KeyValues LoadFOZFile(const char[] file)
+KeyValues LoadFistfulOfZombiesFile(const char[] file)
 {
     char path[PLATFORM_MAX_PATH];
     BuildPath(Path_SM, path, sizeof(path), file);
-    WriteLog("LoadFOZFile %s", path);
+    WriteLog("LoadFistfulOfZombiesFile %s", path);
 
     KeyValues config = new KeyValues("fistful_of_zombies");
     if (!config.ImportFromFile(path))
     {
-        LogError("Could not read map rotation file \"%s\"", file);
-        SetFailState("Could not read map rotation file \"%s\"", file);
+        LogError("Could not read Fistful of Zombies config file \"%s\"", file);
+        SetFailState("Could not read Fistful of Zombies config file \"%s\"", file);
         return null;
     }
 
