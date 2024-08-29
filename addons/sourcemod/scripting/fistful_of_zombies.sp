@@ -8,6 +8,7 @@
  * =============================================================================
  *
  */
+#pragma semicolon 1
 
 #include <sourcemod>
 #include <sdktools>
@@ -16,14 +17,23 @@
 #include <smlib/teams>
 #include <smlib/entities>
 #include <smlib/weapons>
+#include <entitylump>
 #undef REQUIRE_EXTENSIONS
 #tryinclude <steamworks>
 
 #pragma semicolon 1
 #pragma newdecls required
 
+#define MAX_MAPS 64
+
+char Path[PLATFORM_MAX_PATH], MapName[MAX_MAPS][128], LightValue[MAX_MAPS][128];
+
+int loadedMaps;
+
 #define PLUGIN_VERSION "1.10.1"
 #define PLUGIN_NAME "[FoF] Fistful Of Zombies"
+
+#define DMG_FALL (1 << 5)
 
 #define MAX_KEY_LENGTH 128
 #define MAX_TABLE 128
@@ -94,7 +104,7 @@ FoZRoundState g_RoundState = RoundPre;
 public Plugin myinfo =
 {
     name = PLUGIN_NAME,
-    author = "CrimsonTautology",
+    author = "CrimsonTautology, Paralhama and Nocky",
     description = "Zombie Survival for Fistful of Frags",
     version = PLUGIN_VERSION,
     url = "https://github.com/CrimsonTautology/sm-fistful-of-zombies"
@@ -102,68 +112,77 @@ public Plugin myinfo =
 
 public void OnPluginStart()
 {
-    CreateConVar("foz_version", PLUGIN_VERSION, PLUGIN_NAME,
-            FCVAR_SPONLY | FCVAR_REPLICATED | FCVAR_NOTIFY | FCVAR_DONTRECORD);
+	AutoExecConfig(true, "fof_zombies_config");
+	CreateTimer(1.0, ChangeLight);
 
-    g_EnabledCvar = CreateConVar(
-            "foz_enabled", "1",
-            "Whether or not Fistful of Zombies is enabled",
-            FCVAR_NOTIFY, true, 0.0, true, 1.0);
+	CreateConVar("foz_version", PLUGIN_VERSION, PLUGIN_NAME,
+		FCVAR_SPONLY | FCVAR_REPLICATED | FCVAR_NOTIFY | FCVAR_DONTRECORD);
 
-    g_ConfigFileCvar = CreateConVar(
-            "foz_config", "configs/fistful_of_zombies.txt",
-            "Location of the Fistful of Zombies configuration file",
-            0);
+	g_EnabledCvar = CreateConVar(
+		"foz_enabled", "1",
+		"Whether or not Fistful of Zombies is enabled",
+		FCVAR_NOTIFY, true, 0.0, true, 1.0);
 
-    g_RoundTimeCvar = CreateConVar(
-            "foz_round_time", "120",
-            "How long survivors have to survive in seconds to win a round in Fistful of Zombies",
-            FCVAR_NOTIFY, true, 0.0);
+	g_ConfigFileCvar = CreateConVar(
+		"foz_config", "configs/fistful_of_zombies_weapons.txt",
+		"Location of the Fistful of Zombies configuration file",
+		0);
 
-    g_RespawnTimeCvar = CreateConVar(
-            "foz_respawn_time", "15",
-            "How long zombies have to wait before respawning in Fistful of Zombies",
-            FCVAR_NOTIFY, true, 0.0);
+	g_RoundTimeCvar = CreateConVar(
+		"foz_round_time", "120",
+		"How long survivors have to survive in seconds to win a round in Fistful of Zombies",
+		FCVAR_NOTIFY, true, 0.0);
 
-    g_RatioCvar = CreateConVar(
-            "foz_ratio", "0.65",
-            "Percentage of players that start as human.",
-            FCVAR_NOTIFY, true, 0.01, true, 1.0);
+	g_RespawnTimeCvar = CreateConVar(
+		"foz_respawn_time", "15",
+		"How long zombies have to wait before respawning in Fistful of Zombies",
+		FCVAR_NOTIFY, true, 0.0);
 
-    g_InfectionCvar = CreateConVar(
-            "foz_infection", "0.10",
-            "Chance that a human will be infected when punched by a zombie.  Value is scaled such that more human players increase the chance",
-            FCVAR_NOTIFY, true, 0.01, true, 1.0);
+	g_RatioCvar = CreateConVar(
+		"foz_ratio", "0.65",
+		"Percentage of players that start as human.",
+		FCVAR_NOTIFY, true, 0.01, true, 1.0);
 
-    g_TeambalanceAllowedCvar = FindConVar("fof_sv_teambalance_allowed");
-    g_TeamsUnbalanceLimitCvar = FindConVar("mp_teams_unbalance_limit");
-    g_AutoteambalanceCvar = FindConVar("mp_autoteambalance");
+	g_InfectionCvar = CreateConVar(
+		"foz_infection", "0.10",
+		"Chance that a human will be infected when punched by a zombie. Value is scaled such that more human players increase the chance",
+		FCVAR_NOTIFY, true, 0.0, true, 1.0);
 
-    HookEvent("player_spawn", Event_PlayerSpawn);
-    HookEvent("player_death", Event_PlayerDeath);
-    HookEvent("round_start", Event_RoundStart);
-    HookEvent("round_end", Event_RoundEnd);
-    HookEvent("player_team", Event_PlayerTeam, EventHookMode_Pre);
+	g_TeambalanceAllowedCvar = FindConVar("fof_sv_teambalance_allowed");
+	g_TeamsUnbalanceLimitCvar = FindConVar("mp_teams_unbalance_limit");
+	g_AutoteambalanceCvar = FindConVar("mp_autoteambalance");
 
-    RegAdminCmd("foz_reload", Command_Reload, ADMFLAG_CONFIG,
-            "Force a reload of the configuration file");
+	HookEvent("player_spawn", Event_PlayerSpawn);
+	HookEvent("player_death", Event_PlayerDeath);
+	HookEvent("round_start", Event_RoundStart);
+	HookEvent("round_end", Event_RoundEnd);
+	HookEvent("player_team", Event_PlayerTeam, EventHookMode_Pre);
 
-    RegAdminCmd("foz_dump", Command_Dump, ADMFLAG_ROOT,
-            "Debug: Output information about the current game to console");
+	RegAdminCmd("foz_reload", Command_Reload, ADMFLAG_CONFIG,
+		"Force a reload of the configuration file");
 
-    AddCommandListener(Command_JoinTeam, "jointeam");
+	RegAdminCmd("foz_dump", Command_Dump, ADMFLAG_ROOT,
+		"Debug: Output information about the current game to console");
 
-    AddNormalSoundHook(SoundCallback);
+	AddCommandListener(Command_JoinTeam, "jointeam");
+
+	AddNormalSoundHook(SoundCallback);
+
+	SetDefaultConVars();
+	InitializeFistfulOfZombies();
 }
+
 
 public void OnClientPutInServer(int client)
 {
-    if (!IsEnabled()) return;
+	if (!IsEnabled()) return;
 
-    SDKHook(client, SDKHook_WeaponCanUse, Hook_OnWeaponCanUse);
-    SDKHook(client, SDKHook_OnTakeDamage, Hook_OnTakeDamage);
+	SetDefaultConVars();
+	SDKHook(client, SDKHook_WeaponCanUse, Hook_OnWeaponCanUse);
+	SDKHook(client, SDKHook_OnTakeDamage, Hook_OnTakeDamage);
+	SDKHook(client, SDKHook_OnTakeDamage, OnTakefallDamage);
 
-    g_HumanPriority[client] = 0;
+	g_HumanPriority[client] = 0;
 }
 
 public void OnMapStart()
@@ -231,30 +250,34 @@ public void OnMapStart()
 
     // initial setup
     ConvertSpawns();
-    ConvertWhiskey(g_LootTable, g_LootTotalWeight);
+    ConvertWhiskeyAndHorse(g_LootTable, g_LootTotalWeight);
     g_TeamplayEntity = SpawnZombieTeamplayEntity();
     g_AutoSetGameDescription = true;
 
     SetRoundState(RoundPre);
 
     CreateTimer(1.0, Timer_Repeat, .flags = TIMER_REPEAT|TIMER_FLAG_NO_MAPCHANGE);
+    CreateTimer(0.001, Timer_SetConvars, .flags = TIMER_REPEAT|TIMER_FLAG_NO_MAPCHANGE);
 }
 
 public void OnConfigsExecuted()
 {
-    if (!IsEnabled()) return;
+	LoadConfig();
 
-    SetGameDescription(GAME_DESCRIPTION);
-    SetDefaultConVars();
-    InitializeFistfulOfZombies();
+	if (!IsEnabled()) return;
+
+	SetGameDescription(GAME_DESCRIPTION);
+	SetDefaultConVars();
+	InitializeFistfulOfZombies();
 }
 
 void Event_PlayerSpawn(Event event, const char[] name, bool dontBroadcast)
 {
-    if (!IsEnabled()) return;
+	if (!IsEnabled()) return;
 
-    int userid = event.GetInt("userid");
-    RequestFrame(PlayerSpawnDelay, userid);
+	SetDefaultConVars();
+	int userid = event.GetInt("userid");
+	RequestFrame(PlayerSpawnDelay, userid);
 }
 
 void Event_PlayerDeath(Event event, const char[] name, bool dontBroadcast)
@@ -282,7 +305,7 @@ void Event_RoundStart(Event event, const char[] name, bool dontBroadcast)
     SetRoundState(RoundGrace);
     CreateTimer(10.0, Timer_EndGrace, TIMER_FLAG_NO_MAPCHANGE);
 
-    ConvertWhiskey(g_LootTable, g_LootTotalWeight);
+    ConvertWhiskeyAndHorse(g_LootTable, g_LootTotalWeight);
     RemoveCrates();
     RemoveTeamplayEntities();
     RandomizeTeams();
@@ -340,15 +363,15 @@ void PlayerSpawnDelay(int userid)
 
         PrintCenterText(client, "Survive the zombie plague!");
     }
-    else if (IsZombie(client))
-    {
-        // force client model
-        RandomizeModel(client);
-        StripWeapons(client);
-        EmitZombieYell(client);
-
-        PrintCenterText(client, "Ughhhh..... BRAINNNSSSS");
-    }
+	else if (IsZombie(client))
+	{
+		// force client model
+		RandomizeModel(client);
+		StripWeapons(client);
+		EmitZombieYell(client);
+		SetEntPropFloat(client, Prop_Data, "m_flLaggedMovementValue", 1.2 ); 
+		PrintCenterText(client, "Ughhhh..... BRAINNNSSSS");
+	}
 }
 
 void BecomeZombieDelay(int userid)
@@ -405,26 +428,36 @@ Action Timer_GiveSecondaryWeapon(Handle timer, int userid)
 Action Timer_EndGrace(Handle timer)
 {
     SetRoundState(RoundActive);
+    return Plugin_Continue;
+}
+
+
+Action Timer_SetConvars(Handle timer)
+{
+    SetDefaultConVars();
+    return Plugin_Continue;
 }
 
 Action Timer_Repeat(Handle timer)
 {
-    if (!IsEnabled()) return Plugin_Continue;
+    if (!IsEnabled())
+        return Plugin_Continue;
 
     // NOTE: Spawning a teamplay entity seems to now change game description to
-    // Teamplay.  Need to re-set game description back to zombies next
-    // iteration.
+    // Teamplay. Need to re-set game description back to zombies next iteration.
     if (g_AutoSetGameDescription)
     {
         SetGameDescription(GAME_DESCRIPTION);
         g_AutoSetGameDescription = false;
     }
 
+    SetDefaultConVars();
     RoundEndCheck();
 
     for (int client = 1; client <= MaxClients; client++)
     {
-        if (!IsClientInGame(client)) continue;
+        if (!IsClientInGame(client))
+            continue;
 
         if (IsHuman(client))
         {
@@ -438,6 +471,7 @@ Action Timer_Repeat(Handle timer)
 
     return Plugin_Handled;
 }
+
 
 Action Hook_OnWeaponCanUse(int client, int weapon)
 {
@@ -489,6 +523,102 @@ Action Hook_OnTakeDamage(int victim, int& attacker, int& inflictor,
     {
         // reduce the damage of friendly fire
         damage = view_as<float>(RoundToCeil(damage / 10.0));
+    }
+
+    return Plugin_Continue;
+}
+
+public void OnMapInit(const char[] mapName)
+{
+    // Itera sobre todas as entradas de entidades no mapa
+    for (int i = 0; i < EntityLump.Length(); i++) 
+    {
+        EntityLumpEntry entry = EntityLump.Get(i);
+        
+        char classname[32];
+        // Obtém o nome da classe da entidade
+        if (entry.GetNextKey("classname", classname, sizeof(classname)) == -1) continue;
+
+        // Verifica se a entidade é trigger_hurt, trigger_hurt_fof ou prop_physics_respawnable
+        if (StrEqual(classname, "trigger_hurt") || StrEqual(classname, "trigger_hurt_fof"))
+        {
+            // Verifica se o tipo de dano é FALL antes de modificar
+            char CurrentDamageType[32];
+            if (entry.GetNextKey("damagetype", CurrentDamageType, sizeof(CurrentDamageType)) != -1 && (StrEqual(CurrentDamageType, "32")))
+            {
+				// Atualiza o tipo de dano para 0
+				int damageTypeIndex = entry.FindKey("damagetype", -1);
+				if (damageTypeIndex != -1)
+				{
+					entry.Update(damageTypeIndex, "damagetype", "0");
+				}
+
+				// Atualiza o dano para 999
+				int damageIndex = entry.FindKey("damage", -1);
+				if (damageIndex != -1)
+				{
+					entry.Update(damageIndex, "damage", "999");
+				}
+			}
+        }
+        else if (StrEqual(classname, "prop_physics_respawnable"))
+        {
+            // Verifica se a chave "spawnflags" é 0, 1 ou 256
+            char spawnflags[32];
+            if (entry.GetNextKey("spawnflags", spawnflags, sizeof(spawnflags)) != -1 && (StrEqual(spawnflags, "256") || StrEqual(spawnflags, "0") || StrEqual(spawnflags, "1")))
+            {
+                // Atualiza o modelo para "models/elpaso/barrel2_explosive.mdl"
+                int modelIndex = entry.FindKey("model", -1);
+                if (modelIndex != -1)
+                {
+                    entry.Update(modelIndex, "model", "models/elpaso/barrel2_explosive.mdl");
+                }
+
+                // Atualiza o tempo de respawn para 30
+                int respawnTimeIndex = entry.FindKey("RespawnTime", -1);
+                if (respawnTimeIndex != -1)
+                {
+                    entry.Update(respawnTimeIndex, "RespawnTime", "30");
+                }
+
+                // Atualiza o spawnflags para 0
+                int spawnflagsIndex = entry.FindKey("spawnflags", -1);
+                if (spawnflagsIndex != -1)
+                {
+                    entry.Update(spawnflagsIndex, "spawnflags", "0");
+                }
+            }
+        }
+        else if (StrEqual(classname, "worldspawn"))
+        {
+            // Atualiza o skyname para "fof05"
+            int skynameIndex = entry.FindKey("skyname", -1);
+            if (skynameIndex != -1)
+            {
+                entry.Update(skynameIndex, "skyname", "fof05");
+            }
+		}
+	}
+}
+
+
+
+Action OnTakefallDamage(int client, int& attacker, int& inflictor, float& damage, int& damagetype)
+{
+    // Verifica se o jogador está no time 3
+    if (GetClientTeam(client) == 3)
+    {
+        // Verifica se o dano é de queda
+        if (damagetype & DMG_FALL)
+        {
+            // Verifica se o dano de queda é igual ou menor que 99...
+			// Se for maior que 99 significa que o player caiu em algum trigger que deverá matar ele instantaneamente.
+            if (damage <= 99.0)
+            {
+                // Desativa o dano
+                return Plugin_Handled;
+            }
+        }
     }
 
     return Plugin_Continue;
@@ -659,7 +789,7 @@ KeyValues LoadFistfulOfZombiesFile(const char[] file)
     BuildPath(Path_SM, path, sizeof(path), file);
     WriteLog("LoadFistfulOfZombiesFile %s", path);
 
-    KeyValues config = new KeyValues("fistful_of_zombies");
+    KeyValues config = new KeyValues("fistful_of_zombies_weapons");
     if (!config.ImportFromFile(path))
     {
         LogError("Could not read Fistful of Zombies config file \"%s\"", file);
@@ -766,26 +896,45 @@ void ConvertSpawns()
 
 }
 
-// whiskey is used as the spawn points for the random loot accross the map,
-// every whiskey entity is removed and replaced with a random item/weapon.
-void ConvertWhiskey(KeyValues loot_table, int loot_total_weight)
+void ConvertWhiskeyAndHorse(KeyValues loot_table, int loot_total_weight)
 {
     char loot[MAX_KEY_LENGTH];
     int count = 0;
-    int whiskey = INVALID_ENT_REFERENCE;
+    int entity = INVALID_ENT_REFERENCE;
     int converted = INVALID_ENT_REFERENCE;
     float origin[3], angles[3];
 
-    while((whiskey = FindEntityByClassname(whiskey, "item_whiskey")) != INVALID_ENT_REFERENCE)
+    // Process item_whiskey entities
+    while((entity = FindEntityByClassname(entity, "item_whiskey")) != INVALID_ENT_REFERENCE)
     {
-        // get original's position and remove it
-        Entity_GetAbsOrigin(whiskey, origin);
-        Entity_GetAbsAngles(whiskey, angles);
-        Entity_Kill(whiskey);
+        // Get original's position and remove it
+        Entity_GetAbsOrigin(entity, origin);
+        Entity_GetAbsAngles(entity, angles);
+        Entity_Kill(entity);
 
-        // spawn a replacement at the same position
-        GetRandomValueFromTable(loot_table, loot_total_weight, loot,
-                sizeof(loot));
+        // Spawn a replacement at the same position
+        GetRandomValueFromTable(loot_table, loot_total_weight, loot, sizeof(loot));
+        if (StrEqual(loot, "nothing", false)) continue;
+
+        converted = Weapon_Create(loot, origin, angles);
+        Entity_AddEFlags(converted, EFL_NO_GAME_PHYSICS_SIMULATION | EFL_DONTBLOCKLOS);
+
+        count++;
+    }
+
+    // Reset entity reference for processing fof_horse entities
+    entity = INVALID_ENT_REFERENCE;
+
+    // Process fof_horse entities
+    while((entity = FindEntityByClassname(entity, "fof_horse")) != INVALID_ENT_REFERENCE)
+    {
+        // Get original's position and remove it
+        Entity_GetAbsOrigin(entity, origin);
+        Entity_GetAbsAngles(entity, angles);
+        Entity_Kill(entity);
+
+        // Spawn a replacement at the same position
+        GetRandomValueFromTable(loot_table, loot_total_weight, loot, sizeof(loot));
         if (StrEqual(loot, "nothing", false)) continue;
 
         converted = Weapon_Create(loot, origin, angles);
@@ -794,6 +943,7 @@ void ConvertWhiskey(KeyValues loot_table, int loot_total_weight)
         count++;
     }
 }
+
 
 // spawn the fof_teamplay entity that will control the game's logic.
 int SpawnZombieTeamplayEntity()
@@ -1101,7 +1251,7 @@ void RoundEndCheck()
     }
 }
 
-int Sort_HumanPriority(int elem1, int elem2, const array[], Handle hndl)
+int Sort_HumanPriority(int elem1, int elem2, const int[] array, Handle hndl)
 {
     if (g_HumanPriority[elem1] < g_HumanPriority[elem2]) return 1;
     if (g_HumanPriority[elem1] > g_HumanPriority[elem2]) return -1;
@@ -1155,3 +1305,58 @@ stock void WriteLog(const char[] format, any ...)
     PrintToServer("[FOZ - %.3f] %s", GetGameTime(), buf);
 #endif
 }
+
+// ################################## Maps lighting changer ######################################################
+
+void LoadConfig()
+{
+	BuildPath(Path_SM, Path, sizeof(Path), "configs/fistful_of_zombies_maps.cfg");
+	
+	KeyValues kv = new KeyValues("MapLightingChanger");
+	kv.ImportFromFile(Path);
+	
+	if (!FileExists(Path))
+	{
+		SetFailState("Configuration file %s is not found", Path);
+		return;
+	}
+	if (!kv.GotoFirstSubKey())
+	{
+		SetFailState("In configuration file %s is errors", Path);
+		return;
+	}
+	
+	int i = 0;
+	
+	do
+	{
+		kv.GetSectionName(MapName[i], sizeof(MapName[]));
+		kv.GetString("light", LightValue[i], sizeof(LightValue[]));
+		
+		i++;
+		
+	} while (kv.GotoNextKey());
+	
+	loadedMaps = i;
+	
+	delete kv;
+	return;
+}
+
+public Action ChangeLight(Handle timer)
+{
+	char CurrentMap[PLATFORM_MAX_PATH];
+	
+	GetCurrentMap(CurrentMap, sizeof(CurrentMap));
+	for (int i = 0; i <= loadedMaps; i++)
+	{
+		if (StrEqual(MapName[i], CurrentMap))
+		{
+			SetLightStyle(0, LightValue[i]);
+			break; // Interrompe o loop após encontrar a correspondência
+		}
+	}
+
+	return Plugin_Continue; // Retorna um valor explícito
+}
+// ################################################################################################################
