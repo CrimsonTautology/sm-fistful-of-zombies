@@ -181,6 +181,7 @@ public void OnClientPutInServer(int client)
 	SDKHook(client, SDKHook_WeaponCanUse, Hook_OnWeaponCanUse);
 	SDKHook(client, SDKHook_OnTakeDamage, Hook_OnTakeDamage);
 	SDKHook(client, SDKHook_OnTakeDamage, OnTakefallDamage);
+	SDKHook(client, SDKHook_PreThinkPost, OnPreThinkPost);
 
 	g_HumanPriority[client] = 0;
 }
@@ -369,7 +370,7 @@ void PlayerSpawnDelay(int userid)
 		RandomizeModel(client);
 		StripWeapons(client);
 		EmitZombieYell(client);
-		SetEntPropFloat(client, Prop_Data, "m_flLaggedMovementValue", 1.2 ); 
+		SetEntPropFloat(client, Prop_Data, "m_flMaxspeed", 320.0 ); 
 		PrintCenterText(client, "Ughhhh..... BRAINNNSSSS");
 	}
 }
@@ -623,6 +624,14 @@ Action OnTakefallDamage(int client, int& attacker, int& inflictor, float& damage
 
     return Plugin_Continue;
 }
+
+public void OnPreThinkPost(int client)
+{
+    if(IsZombie(client))
+    {
+        SetEntPropFloat(client, Prop_Data, "m_flMaxspeed", 320.0);
+    }
+}  
 
 Action Command_JoinTeam(int client, const char[] command, int argc)
 {
