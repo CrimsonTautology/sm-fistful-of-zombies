@@ -1,5 +1,4 @@
 # compiled files
-*.smx
 *.asm
 *.lst
 *.so
