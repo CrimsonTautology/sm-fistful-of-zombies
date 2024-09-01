@@ -607,7 +607,7 @@ public void OnMapInit(const char[] mapName)
 Action OnTakefallDamage(int client, int& attacker, int& inflictor, float& damage, int& damagetype)
 {
     // Verifica se o jogador está no time 3
-    if (GetClientTeam(client) == 3)
+    if (IsZombie(client))
     {
         // Verifica se o dano é de queda
         if (damagetype & DMG_FALL)
@@ -629,7 +629,7 @@ public void OnPreThinkPost(int client)
 {
     if(IsZombie(client))
     {
-        SetEntPropFloat(client, Prop_Data, "m_flMaxspeed", 320.0);
+        SetEntPropFloat(client, Prop_Data, "m_flMaxspeed", 300.0);
     }
 }  
 
